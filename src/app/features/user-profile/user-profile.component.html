@@ -1,0 +1,382 @@
+<div class="profile-page">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <a routerLink="/home">Accueil</a>
+      <i class="pi pi-chevron-right"></i>
+      <span>Mon profil</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>Mon compte</h1>
+      <p>Gérez vos informations personnelles et suivez vos commandes</p>
+    </div>
+
+    <!-- Profile Content -->
+    <div class="profile-content">
+      <!-- Sidebar -->
+      <aside class="profile-sidebar">
+        <div class="user-card">
+          <div class="user-avatar">
+            <img [src]="selectedAvatar || avatars[0]" [alt]="currentUser?.fullName">
+            <button class="change-avatar-btn" (click)="showAvatarModal = true">
+              <i class="pi pi-camera"></i>
+            </button>
+          </div>
+          <h3>{{ currentUser?.fullName }}</h3>
+          <p class="user-email">{{ currentUser?.email }}</p>
+          <p class="user-since">Membre depuis {{ stats.memberSince }}</p>
+        </div>
+
+        <div class="nav-menu">
+          <button class="nav-item" [class.active]="activeTab === 'profile'" (click)="activeTab = 'profile'">
+            <i class="pi pi-user"></i>
+            <span>Informations personnelles</span>
+          </button>
+          <button class="nav-item" [class.active]="activeTab === 'orders'" (click)="activeTab = 'orders'">
+            <i class="pi pi-shopping-bag"></i>
+            <span>Mes commandes</span>
+            <span class="badge" *ngIf="orders.length > 0">{{ orders.length }}</span>
+          </button>
+          <button class="nav-item" [class.active]="activeTab === 'security'" (click)="activeTab = 'security'">
+            <i class="pi pi-shield"></i>
+            <span>Sécurité</span>
+          </button>
+          <button class="nav-item logout" (click)="authService.logout(); router.navigate(['/home'])">
+            <i class="pi pi-sign-out"></i>
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="profile-main">
+        <!-- Profile Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'profile'">
+          <div class="stats-cards">
+            <div class="stat-card">
+              <i class="pi pi-shopping-cart"></i>
+              <div>
+                <span class="stat-value">{{ stats.totalOrders }}</span>
+                <span class="stat-label">Commandes</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="pi pi-money-bill"></i>
+              <div>
+                <span class="stat-value">{{ stats.totalSpent | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                <span class="stat-label">Dépensé</span>
+              </div>
+            </div>
+            <div class="stat-card">
+              <i class="pi pi-heart"></i>
+              <div>
+                <span class="stat-value">{{ stats.favoriteCategory || '-' }}</span>
+                <span class="stat-label">Catégorie préférée</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <div class="card-header">
+              <h2>Informations personnelles</h2>
+              <button class="edit-btn" *ngIf="!isEditing" (click)="isEditing = true">
+                <i class="pi pi-pencil"></i>
+                Modifier
+              </button>
+            </div>
+
+            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" *ngIf="isEditing; else viewMode">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Nom complet</label>
+                  <input type="text" formControlName="fullName" placeholder="Votre nom">
+                  <div class="error-message" *ngIf="profileForm.get('fullName')?.touched && profileForm.get('fullName')?.invalid">
+                    <small *ngIf="profileForm.get('fullName')?.errors?.['required']">Le nom est requis</small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" formControlName="email" placeholder="votre@email.com">
+                  <div class="error-message" *ngIf="profileForm.get('email')?.touched && profileForm.get('email')?.invalid">
+                    <small *ngIf="profileForm.get('email')?.errors?.['required']">L'email est requis</small>
+                    <small *ngIf="profileForm.get('email')?.errors?.['email']">Email invalide</small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Téléphone</label>
+                  <input type="tel" formControlName="phone" placeholder="+33 6 12 34 56 78">
+                  <div class="error-message" *ngIf="profileForm.get('phone')?.touched && profileForm.get('phone')?.invalid">
+                    <small *ngIf="profileForm.get('phone')?.errors?.['required']">Le téléphone est requis</small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Adresse</label>
+                  <input type="text" formControlName="address" placeholder="Numéro et rue">
+                  <div class="error-message" *ngIf="profileForm.get('address')?.touched && profileForm.get('address')?.invalid">
+                    <small *ngIf="profileForm.get('address')?.errors?.['required']">L'adresse est requise</small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Ville</label>
+                  <input type="text" formControlName="city" placeholder="Ville">
+                </div>
+
+                <div class="form-group">
+                  <label>Code postal</label>
+                  <input type="text" formControlName="postalCode" placeholder="75001">
+                </div>
+
+                <div class="form-group">
+                  <label>Pays</label>
+                  <select formControlName="country">
+                    <option value="France">France</option>
+                    <option value="Belgique">Belgique</option>
+                    <option value="Suisse">Suisse</option>
+                    <option value="Canada">Canada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn-secondary" (click)="cancelEdit()">Annuler</button>
+                <button type="submit" class="btn-primary" [disabled]="isSaving">
+                  <i class="pi pi-spin pi-spinner" *ngIf="isSaving"></i>
+                  <i class="pi pi-save" *ngIf="!isSaving"></i>
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+
+            <ng-template #viewMode>
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Nom complet</label>
+                  <p>{{ currentUser?.fullName }}</p>
+                </div>
+                <div class="info-item">
+                  <label>Email</label>
+                  <p>{{ currentUser?.email }}</p>
+                </div>
+                <div class="info-item">
+                  <label>Téléphone</label>
+                  <p>{{ currentUser?.phone }}</p>
+                </div>
+                <div class="info-item full-width">
+                  <label>Adresse</label>
+                  <p>{{ currentUser?.address?.replace(/\|/g, ', ') || 'Non renseignée' }}</p>
+                </div>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- Delete Account -->
+          <div class="danger-zone">
+            <h3>Zone dangereuse</h3>
+            <p>Une fois votre compte supprimé, toutes vos données seront perdues.</p>
+            <button class="btn-danger" (click)="showDeleteModal = true">
+              <i class="pi pi-trash"></i>
+              Supprimer mon compte
+            </button>
+          </div>
+        </div>
+
+        <!-- Orders Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'orders'">
+          <div class="orders-header">
+            <h2>Mes commandes</h2>
+            <div class="filter-select">
+              <i class="pi pi-filter"></i>
+              <select [(ngModel)]="orderStatusFilter">
+                <option *ngFor="let status of orderStatuses" [value]="status.value">
+                  {{ status.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="orders-list" *ngIf="!isLoading; else ordersSkeleton">
+            <div *ngFor="let order of getFilteredOrders()" class="order-card">
+              <div class="order-header">
+                <div class="order-info">
+                  <span class="order-number">Commande #{{ order.id }}</span>
+                  <span class="order-date">{{ formatDate(order.createdAt) }}</span>
+                </div>
+                <div class="order-status">
+                  <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)"></p-tag>
+                </div>
+              </div>
+
+              <div class="order-items">
+                <div *ngFor="let item of order.items" class="order-item">
+                  <img [src]="item.product.images[0]" [alt]="item.product.name">
+                  <div class="item-details">
+                    <h4>{{ item.product.name }}</h4>
+                    <p>Quantité: {{ item.quantity }}</p>
+                  </div>
+                  <div class="item-price">
+                    {{ (item.product.discountPrice || item.product.price) * item.quantity | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="order-footer">
+                <div class="order-total">
+                  <span>Total</span>
+                  <strong>{{ order.total | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+                </div>
+                <button class="view-order-btn" (click)="viewOrderDetails(order)">
+                  Voir les détails
+                  <i class="pi pi-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="empty-orders" *ngIf="getFilteredOrders().length === 0">
+              <i class="pi pi-shopping-bag"></i>
+              <h3>Aucune commande trouvée</h3>
+              <p>Vous n'avez pas encore passé de commande</p>
+              <button class="btn-primary" routerLink="/products">
+                Découvrir nos produits
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'security'">
+          <div class="security-card">
+            <h2>Changer mon mot de passe</h2>
+            
+            <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+              <div class="form-group">
+                <label>Mot de passe actuel</label>
+                <div class="password-input-wrapper">
+                  <input [type]="showCurrentPassword ? 'text' : 'password'" formControlName="currentPassword">
+                  <button type="button" class="toggle-password" (click)="showCurrentPassword = !showCurrentPassword">
+                    <i [class]="showCurrentPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                  </button>
+                </div>
+                <div class="error-message" *ngIf="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.invalid">
+                  <small>Le mot de passe actuel est requis</small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Nouveau mot de passe</label>
+                <div class="password-input-wrapper">
+                  <input [type]="showNewPassword ? 'text' : 'password'" formControlName="newPassword">
+                  <button type="button" class="toggle-password" (click)="showNewPassword = !showNewPassword">
+                    <i [class]="showNewPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                  </button>
+                </div>
+                <div class="error-message" *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.invalid">
+                  <small *ngIf="passwordForm.get('newPassword')?.errors?.['required']">Le nouveau mot de passe est requis</small>
+                  <small *ngIf="passwordForm.get('newPassword')?.errors?.['minlength']">Minimum 8 caractères</small>
+                  <small *ngIf="passwordForm.get('newPassword')?.errors?.['pattern']">
+                    Doit contenir: majuscule, minuscule, chiffre, caractère spécial
+                  </small>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Confirmer le mot de passe</label>
+                <div class="password-input-wrapper">
+                  <input [type]="showConfirmPassword ? 'text' : 'password'" formControlName="confirmPassword">
+                  <button type="button" class="toggle-password" (click)="showConfirmPassword = !showConfirmPassword">
+                    <i [class]="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+                  </button>
+                </div>
+                <div class="error-message" *ngIf="passwordForm.errors?.['passwordMismatch'] && passwordForm.get('confirmPassword')?.touched">
+                  <small>Les mots de passe ne correspondent pas</small>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" [disabled]="isSaving">
+                <i class="pi pi-spin pi-spinner" *ngIf="isSaving"></i>
+                <i class="pi pi-key" *ngIf="!isSaving"></i>
+                Changer le mot de passe
+              </button>
+            </form>
+          </div>
+
+          <div class="security-card">
+            <h2>Appareils connectés</h2>
+            <div class="device-list">
+              <div class="device-item">
+                <i class="pi pi-desktop"></i>
+                <div>
+                  <strong>Ce navigateur</strong>
+                  <span>Paris, France • Actif maintenant</span>
+                </div>
+                <span class="device-badge">Actuel</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="security-card">
+            <h2>Activité récente</h2>
+            <div class="activity-list">
+              <div class="activity-item">
+                <i class="pi pi-sign-in"></i>
+                <div>
+                  <strong>Connexion</strong>
+                  <span>Aujourd'hui à 14:30 - Paris, France</span>
+                </div>
+              </div>
+              <div class="activity-item">
+                <i class="pi pi-shopping-cart"></i>
+                <div>
+                  <strong>Commande passée</strong>
+                  <span>Hier à 10:15 - Commande #12345</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<!-- Avatar Modal -->
+<p-dialog [(visible)]="showAvatarModal" header="Changer mon avatar" [modal]="true" [style]="{width: '500px'}" styleClass="avatar-modal">
+  <div class="avatar-grid">
+    <div *ngFor="let avatar of avatars" class="avatar-option" [class.selected]="selectedAvatar === avatar" (click)="changeAvatar(avatar)">
+      <img [src]="avatar" alt="Avatar">
+    </div>
+  </div>
+</p-dialog>
+
+<!-- Delete Account Modal -->
+<p-dialog [(visible)]="showDeleteModal" header="Supprimer mon compte" [modal]="true" [style]="{width: '450px'}" styleClass="delete-modal">
+  <div class="delete-content">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>Attention !</h3>
+    <p>Cette action est irréversible. Toutes vos données seront supprimées définitivement.</p>
+    <div class="delete-confirm">
+      <label>Tapez "SUPPRIMER" pour confirmer</label>
+      <input type="text" [(ngModel)]="deleteConfirmText" placeholder="SUPPRIMER">
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button class="btn-secondary" (click)="showDeleteModal = false">Annuler</button>
+    <button class="btn-danger" (click)="deleteAccount()">Supprimer</button>
+  </ng-template>
+</p-dialog>
+
+<!-- Orders Loading Skeleton -->
+<ng-template #ordersSkeleton>
+  <div class="skeleton-orders">
+    <div *ngFor="let _ of [1,2,3]" class="skeleton-order">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-item"></div>
+      <div class="skeleton-footer"></div>
+    </div>
+  </div>
+</ng-template>

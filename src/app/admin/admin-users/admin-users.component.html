@@ -1,0 +1,74 @@
+<section class="admin-page">
+  <header>
+    <h1>Gestion des utilisateurs</h1>
+    <button pButton type="button" label="Nouvel utilisateur" icon="pi pi-plus" (click)="openNew()"></button>
+  </header>
+
+  <p-table [value]="users()" [loading]="loading()" responsiveLayout="scroll">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Nom</th>
+        <th>Email</th>
+        <th>Telephone</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-user>
+      <tr>
+        <td>{{ user.fullName }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.phone }}</td>
+        <td>
+          <p-tag [value]="getRoleLabel(user.role)" [severity]="getRoleSeverity(user.role)"></p-tag>
+        </td>
+        <td>
+          <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editUser(user)" aria-label="Modifier"></button>
+          <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteUser(user)" aria-label="Supprimer"></button>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [header]="isEditing() ? 'Modifier utilisateur' : 'Nouvel utilisateur'"
+    [modal]="true"
+    [visible]="userDialog()"
+    [style]="{ width: '32rem' }"
+    (visibleChange)="userDialog.set($event)"
+  >
+    <form class="dialog-form" [formGroup]="userForm" (ngSubmit)="saveUser()">
+      <label>
+        Nom complet
+        <input pInputText type="text" formControlName="fullName" />
+      </label>
+      <label>
+        Email
+        <input pInputText type="email" formControlName="email" />
+      </label>
+      <label>
+        Telephone
+        <input pInputText type="tel" formControlName="phone" />
+      </label>
+      <label>
+        Adresse
+        <input pInputText type="text" formControlName="address" />
+      </label>
+      <label>
+        Role
+        <p-select
+          formControlName="role"
+          [options]="roleOptions"
+          optionLabel="label"
+          optionValue="value"
+        ></p-select>
+      </label>
+    </form>
+
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Annuler" class="p-button-text" (click)="userDialog.set(false)"></button>
+      <button pButton type="button" label="Enregistrer" (click)="saveUser()"></button>
+    </ng-template>
+  </p-dialog>
+</section>

@@ -1,0 +1,35 @@
+<p-card class="auth-card">
+  <ng-template pTemplate="title">Create account</ng-template>
+  <ng-template pTemplate="subtitle">Join the boutique experience</ng-template>
+
+  <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Full name
+      <input pInputText type="text" formControlName="fullName" placeholder="Your name" />
+    </label>
+
+    <label>
+      Email
+      <input pInputText type="email" formControlName="email" placeholder="you@example.com" />
+    </label>
+
+    <label>
+      Password
+      <p-password formControlName="password" [feedback]="false" [toggleMask]="true" styleClass="auth-password"></p-password>
+    </label>
+
+    <label>
+      Address
+      <input pInputText type="text" formControlName="address" placeholder="Shipping address" />
+    </label>
+
+    <label>
+      Phone
+      <input pInputText type="tel" formControlName="phone" placeholder="Phone number" />
+    </label>
+
+    <button pButton type="submit" label="Create account" class="auth-button"></button>
+  </form>
+
+  <p class="auth-footer">Already have an account? <a routerLink="/auth/login">Sign in</a></p>
+</p-card>

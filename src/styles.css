@@ -1,0 +1,283 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@400;600;700&display=swap');
+@import 'primeflex/primeflex.css';
+@import 'primeicons/primeicons.css';
+
+:root {
+	--brand-font: 'ValeriaLogo', 'Playfair Display', serif;
+	--tagline-font: 'Inter', sans-serif;
+	--bg: #f7eef2;
+	--bg-light: #fff7fa;
+	--bg-white: #ffffff;
+	--surface: rgba(255, 255, 255, 0.82);
+	--surface-strong: #ffffff;
+	--surface-ink: #1f0e12;
+	--primary-color: #7a0e18;
+	--primary-dark: #4d0810;
+	--primary-light: #9c1a2b;
+	--primary-rgb: 122, 14, 24;
+	--secondary-color: #3a2a2e;
+	--muted: #6b5a60;
+	--text-dark: #2b1a1d;
+	--text-gray: #7a6a6e;
+	--text-light: #bdc3c7;
+	--border: rgba(122, 14, 24, 0.10);
+	--border-color: #efd7e0;
+	--accent: #d4af37;
+	--accent-rgb: 212, 175, 55;
+	--accent-color: #d4af37;
+	--success: #27ae60;
+	--warning: #f39c12;
+	--danger: #e74c3c;
+	--accent-strong: #9b7a1f;
+	--accent-soft: #f7edd1;
+	--shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+	--shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.10);
+	--shadow-md: 0 14px 40px rgba(15, 23, 42, 0.08);
+	--shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+	--radius-xl: 1.5rem;
+	--radius-lg: 1.1rem;
+	--radius-md: 0.9rem;
+}
+
+@font-face {
+	font-family: 'ValeriaLogo';
+	src:
+		url('/fonts/valeria-logo.woff2') format('woff2'),
+		url('/fonts/valeria-logo.woff') format('woff');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+}
+
+body {
+	font-family: 'Inter', sans-serif;
+	color: var(--surface-ink);
+	background:
+		radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 32%),
+		radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.10), transparent 30%),
+		linear-gradient(180deg, var(--bg-light) 0%, var(--bg) 55%, var(--bg) 100%);
+	overflow-x: hidden;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+a {
+	color: inherit;
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.16em;
+}
+
+h1,
+h2,
+h3,
+h4,
+.logo-text,
+.section-title,
+.hero-title,
+.page-hero h1,
+.detail-card h1,
+.admin-dashboard-title {
+	font-family: 'Playfair Display', serif;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+::selection {
+	background: rgba(var(--accent-rgb), 0.25);
+	color: var(--surface-ink);
+}
+
+main {
+	display: block;
+}
+
+.app-shell {
+	width: min(1440px, calc(100% - 2rem));
+	margin: 0 auto;
+	padding: clamp(1rem, 2vw, 1.75rem) 0 3rem;
+}
+
+.container {
+	max-width: 1400px;
+	margin: 0 auto;
+	padding: 0 2rem;
+}
+
+.btn-primary {
+	background: var(--primary-color);
+	border: none;
+	color: #fff;
+	padding: 0.75rem 1.5rem;
+	border-radius: 8px;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.btn-primary:hover {
+	background: var(--primary-dark);
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-md);
+}
+
+.btn-outline {
+	background: transparent;
+	border: 2px solid var(--primary-color);
+	color: var(--primary-color);
+	padding: 0.75rem 1.5rem;
+	border-radius: 8px;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	cursor: pointer;
+}
+
+.btn-outline:hover {
+	background: var(--primary-color);
+	color: #fff;
+	transform: translateY(-2px);
+}
+
+.card {
+	background: var(--bg-white);
+	border-radius: 12px;
+	box-shadow: var(--shadow-sm);
+	transition: all 0.3s ease;
+	overflow: hidden;
+}
+
+.card:hover {
+	transform: translateY(-4px);
+	box-shadow: var(--shadow-lg);
+}
+
+.skeleton {
+	background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+	background-size: 200% 100%;
+	animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+	0% {
+		background-position: 200% 0;
+	}
+
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+.p-button {
+	border-radius: 999px;
+	transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.p-button:hover {
+	transform: translateY(-1px);
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined) {
+	box-shadow: var(--shadow-md);
+	background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+	border: 1px solid var(--border);
+}
+
+.p-button.p-button-text {
+	color: var(--surface-ink);
+}
+
+.p-button.p-button-outlined {
+	border-color: rgba(15, 23, 42, 0.12);
+	color: var(--surface-ink);
+	background: rgba(255, 255, 255, 0.62);
+}
+
+.p-card {
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+	border: 1px solid var(--border);
+	box-shadow: var(--shadow-md);
+	background: var(--surface-strong);
+}
+
+.p-rating .p-rating-icon {
+	color: var(--accent) !important;
+}
+
+.p-inputtext,
+.p-inputnumber-input,
+.p-select,
+.p-multiselect,
+.p-dropdown,
+.p-selectbutton .p-button {
+	border-radius: 0.9rem;
+	border-color: rgba(15, 23, 42, 0.12);
+	background: rgba(255, 255, 255, 0.85);
+}
+
+.p-inputtext:focus,
+.p-inputnumber-input:focus,
+.p-select:focus,
+.p-multiselect:focus,
+.p-dropdown:focus {
+	box-shadow: 0 0 0 0.2rem rgba(var(--accent-rgb), 0.16);
+	border-color: rgba(var(--accent-rgb), 0.45);
+}
+
+.p-table {
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+	box-shadow: var(--shadow-md);
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+	background: #f8fafc;
+	color: var(--surface-ink);
+}
+
+.p-tag {
+	border-radius: 999px;
+}
+
+.p-dialog .p-dialog-content,
+.p-drawer .p-drawer-content {
+	background: rgba(255, 255, 255, 0.96);
+	backdrop-filter: blur(18px);
+}
+
+.p-menubar,
+.p-card .p-card-body {
+	background: transparent;
+}
+
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(15, 23, 42, 0.06);
+}
+
+::-webkit-scrollbar-thumb {
+	background: linear-gradient(180deg, #9a7b3d, #caa15a);
+	border-radius: 999px;
+}
+
+@media (max-width: 768px) {
+	.container {
+		padding: 0 1rem;
+	}
+}

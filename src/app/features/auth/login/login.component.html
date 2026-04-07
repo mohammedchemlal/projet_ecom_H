@@ -1,0 +1,28 @@
+<p-card class="auth-card">
+  <ng-template pTemplate="title">Sign in</ng-template>
+  <ng-template pTemplate="subtitle">Access your account</ng-template>
+
+  <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+    <label>
+      Email
+      <input pInputText type="email" formControlName="email" placeholder="you@example.com" />
+    </label>
+
+    @if (form.controls.email.touched && form.controls.email.invalid) {
+      <small class="error">Enter a valid email address.</small>
+    }
+
+    <label>
+      Password
+      <p-password formControlName="password" [feedback]="false" [toggleMask]="true" styleClass="auth-password"></p-password>
+    </label>
+
+    @if (form.controls.password.touched && form.controls.password.invalid) {
+      <small class="error">Password must contain at least 6 characters.</small>
+    }
+
+    <button pButton type="submit" label="Login" class="auth-button"></button>
+  </form>
+
+  <p class="auth-footer">Don't have an account? <a routerLink="/auth/register">Create one</a></p>
+</p-card>

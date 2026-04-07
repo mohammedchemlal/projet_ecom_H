@@ -1,0 +1,415 @@
+@if (!isLoading) {
+  <div class="product-detail-page">
+    @if (product) {
+      <div class="container">
+        <!-- Back Button -->
+        <button class="back-button" (click)="goBack()">
+          <i class="pi pi-arrow-left"></i>
+          Retour
+        </button>
+        <!-- Product Main Section -->
+        <div class="product-main">
+          <!-- Image Gallery -->
+          <div class="product-gallery">
+            <div class="gallery-thumbnails">
+              @for (image of product.images; track image; let i = $index) {
+                <div
+                  class="thumbnail"
+                  [class.active]="selectedImageIndex === i"
+                  (click)="selectedImageIndex = i"
+                >
+                  <img [src]="image" [alt]="product.name + ' - ' + i" />
+                </div>
+              }
+            </div>
+            <div class="gallery-main">
+              <div class="main-image" (click)="openZoomModal(selectedImageIndex)">
+                <img [src]="product.images[selectedImageIndex]" [alt]="product.name" />
+                <div class="zoom-icon">
+                  <i class="pi pi-search-plus"></i>
+                </div>
+              </div>
+              <!-- Thumbnails for mobile -->
+              <div class="gallery-thumbnails-mobile">
+                @for (image of product.images; track image; let i = $index) {
+                  <div
+                    class="thumbnail-mobile"
+                    [class.active]="selectedImageIndex === i"
+                    (click)="selectedImageIndex = i"
+                  >
+                    <img [src]="image" [alt]="product.name + ' - ' + i" />
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+          <!-- Product Info -->
+          <div class="product-info">
+            <div class="product-category">
+              <span class="category-badge">{{ product.category | titlecase }}</span>
+              <span class="stock-status" [class]="getStockStatusClass()">
+                <i
+                  class="pi"
+                  [class.pi-check-circle]="product.stock > 0"
+                  [class.pi-times-circle]="product.stock === 0"
+                ></i>
+                {{ getStockStatus() }}
+              </span>
+            </div>
+            <h1 class="product-title">{{ product.name }}</h1>
+            <div class="product-rating">
+              <div class="stars">
+                @for (star of getStarsArray(product.rating); track star) {
+                  <i class="pi pi-star-fill"></i>
+                }
+                @for (star of getEmptyStarsArray(product.rating); track star) {
+                  <i class="pi pi-star"></i>
+                }
+              </div>
+              <span class="rating-value">{{ product.rating }}</span>
+              <span class="reviews-count">({{ product.reviewCount }} avis)</span>
+            </div>
+            <div class="product-price">
+              <span class="current-price">{{ getDiscountedPrice() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              @if (product.discountPrice) {
+                <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              }
+              @if (product.isPromotion) {
+                <span class="discount-badge">-{{ getDiscountPercentage() }}%</span>
+              }
+            </div>
+            <div class="product-description">
+              <h3>Description</h3>
+              <p>{{ product.description }}</p>
+            </div>
+            <!-- Quantity Selector -->
+            <div class="quantity-selector">
+              <label>Quantité</label>
+              <div class="quantity-controls">
+                <button class="qty-btn" (click)="decreaseQuantity()" [disabled]="quantity <= 1">
+                  <i class="pi pi-minus"></i>
+                </button>
+                <input
+                  type="number"
+                  [(ngModel)]="quantity"
+                  min="1"
+                  [max]="product.stock"
+                  class="quantity-input"
+                />
+                <button
+                  class="qty-btn"
+                  (click)="increaseQuantity()"
+                  [disabled]="quantity >= product.stock"
+                >
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+            </div>
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+              <button
+                class="btn-add-to-cart"
+                (click)="addToCart()"
+                [disabled]="product.stock === 0"
+              >
+                <i class="pi pi-shopping-cart"></i>
+                Ajouter au panier
+              </button>
+              <button
+                class="btn-wishlist"
+                [class.active]="isInWishlist()"
+                (click)="addToWishlist()"
+              >
+                <i class="pi pi-heart"></i>
+                <span>{{ isInWishlist() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}</span>
+              </button>
+            </div>
+            <!-- Product Features -->
+            <div class="product-features">
+              <div class="feature">
+                <i class="pi pi-truck"></i>
+                <div>
+                  <strong>Livraison gratuite</strong>
+                  <span>À partir de 500 DH d'achat</span>
+                </div>
+              </div>
+              <div class="feature">
+                <i class="pi pi-refresh"></i>
+                <div>
+                  <strong>Retours gratuits</strong>
+                  <span>Sous 30 jours</span>
+                </div>
+              </div>
+              <div class="feature">
+                <i class="pi pi-lock"></i>
+                <div>
+                  <strong>Paiement sécurisé</strong>
+                  <span>CB, PayPal, Apple Pay</span>
+                </div>
+              </div>
+              <div class="feature">
+                <i class="pi pi-gem"></i>
+                <div>
+                  <strong>Garantie 2 ans</strong>
+                  <span>Certifiée</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Tabs Section -->
+        <div class="product-tabs">
+          <div class="tabs-header">
+            <button
+              class="tab-btn"
+              [class.active]="activeTab === 'description'"
+              (click)="activeTab = 'description'"
+            >
+              Description détaillée
+            </button>
+            <button
+              class="tab-btn"
+              [class.active]="activeTab === 'reviews'"
+              (click)="activeTab = 'reviews'"
+            >
+              Avis clients ({{ reviewStats.total }})
+            </button>
+          </div>
+          <div class="tabs-content">
+            <!-- Description Tab -->
+            @if (activeTab === 'description') {
+              <div class="tab-pane">
+                <div class="description-content">
+                  <h3>Détails du produit</h3>
+                  <p>{{ product.description }}</p>
+                  <h3>Caractéristiques</h3>
+                  <ul class="features-list">
+                    <li><i class="pi pi-check-circle"></i> Matière: Argent sterling 925</li>
+                    <li><i class="pi pi-check-circle"></i> Placage: Or 18 carats</li>
+                    <li><i class="pi pi-check-circle"></i> Poids: 5g</li>
+                    <li>
+                      <i class="pi pi-check-circle"></i> Longueur: 45cm + chaîne d'extension 5cm
+                    </li>
+                    <li><i class="pi pi-check-circle"></i> Livré dans un écrin cadeau</li>
+                    <li><i class="pi pi-check-circle"></i> Certificat d'authenticité inclus</li>
+                  </ul>
+                  <h3>Entretien</h3>
+                  <p>
+                    Pour préserver l'éclat de votre bijou, évitez tout contact avec l'eau, les
+                    produits chimiques et les parfums. Nettoyez délicatement avec un chiffon doux.
+                  </p>
+                </div>
+              </div>
+            }
+            <!-- Reviews Tab -->
+            @if (activeTab === 'reviews') {
+              <div class="tab-pane">
+                <div class="reviews-summary">
+                  <div class="rating-summary">
+                    <div class="average-rating">
+                      <span class="rating-number">{{ reviewStats.average | number: '1.1-1' }}</span>
+                      <div class="stars">
+                        @for (star of getStarsArray(roundRating(reviewStats.average)); track star) {
+                          <i class="pi pi-star-fill"></i>
+                        }
+                        @for (
+                          star of getEmptyStarsArray(roundRating(reviewStats.average));
+                          track star
+                        ) {
+                          <i class="pi pi-star"></i>
+                        }
+                      </div>
+                      <span class="total-reviews">Basé sur {{ reviewStats.total }} avis</span>
+                    </div>
+                    <div class="rating-distribution">
+                      @for (rating of [5, 4, 3, 2, 1]; track rating) {
+                        <div class="distribution-bar">
+                          <span class="rating-label">{{ rating }} étoiles</span>
+                          <div class="bar-container">
+                            <div
+                              class="bar-fill"
+                              [style.width.%]="getPercentageForRating(rating)"
+                            ></div>
+                          </div>
+                          <span class="percentage"
+                            >{{ getPercentageForRating(rating) | number: '1.0-0' }}%</span
+                          >
+                        </div>
+                      }
+                    </div>
+                  </div>
+                  <button class="write-review-btn" (click)="showReviewDialog = true">
+                    <i class="pi pi-pencil"></i>
+                    Donner mon avis
+                  </button>
+                </div>
+                <div class="reviews-list">
+                  @for (review of reviews; track review) {
+                    <div class="review-card">
+                      <div class="review-header">
+                        <img
+                          [src]="review.userAvatar"
+                          [alt]="review.userName"
+                          class="reviewer-avatar"
+                        />
+                        <div class="reviewer-info">
+                          <div class="reviewer-name">
+                            {{ review.userName }}
+                            @if (review.verified) {
+                              <span class="verified-badge">
+                                <i class="pi pi-check-circle"></i> Achat vérifié
+                              </span>
+                            }
+                          </div>
+                          <div class="review-date">{{ formatDate(review.date) }}</div>
+                        </div>
+                        <div class="review-rating">
+                          @for (star of getStarsArray(review.rating); track star) {
+                            <i class="pi pi-star-fill"></i>
+                          }
+                        </div>
+                      </div>
+                      <h4 class="review-title">{{ review.title }}</h4>
+                      <p class="review-comment">{{ review.comment }}</p>
+                      @if (review.images?.length) {
+                        <div class="review-images">
+                          @for (img of review.images; track img) {
+                            <img [src]="img" alt="Review image" />
+                          }
+                        </div>
+                      }
+                      <div class="review-footer">
+                        <button class="like-btn">
+                          <i class="pi pi-heart"></i>
+                          Utile ({{ review.likes }})
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+        <!-- Related Products -->
+        @if (relatedProducts.length > 0) {
+          <div class="related-products">
+            <h2 class="section-title">Produits similaires</h2>
+            <div class="related-products-grid">
+              @for (related of relatedProducts; track related) {
+                <div class="related-product-card" [routerLink]="['/product', related.id]">
+                  <div class="product-image">
+                    <img [src]="related.images[0]" [alt]="related.name" />
+                  </div>
+                  <div class="product-info">
+                    <h3>{{ related.name }}</h3>
+                    <div class="product-price">
+                      <span class="current-price">{{
+                        related.discountPrice || related.price | currency:'MAD':'symbol':'1.0-0':'fr-MA'
+                      }}</span>
+                    </div>
+                    <p-rating [(ngModel)]="related.rating" [readonly]="true"></p-rating>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <div class="container">
+    <div class="skeleton-wrapper">
+      <div class="skeleton skeleton-back-button"></div>
+      <div class="product-main">
+        <div class="product-gallery">
+          <div class="skeleton skeleton-thumbnails"></div>
+          <div class="skeleton skeleton-main-image"></div>
+        </div>
+        <div class="product-info">
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-rating"></div>
+          <div class="skeleton skeleton-price"></div>
+          <div class="skeleton skeleton-text"></div>
+          <div class="skeleton skeleton-text short"></div>
+          <div class="skeleton skeleton-quantity"></div>
+          <div class="skeleton skeleton-buttons"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Zoom Modal -->
+<p-dialog
+  [(visible)]="showZoomModal"
+  [modal]="true"
+  [style]="{ width: '90vw', height: '90vh' }"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="zoom-modal"
+>
+  <div class="zoom-container">
+    <img
+      [src]="product?.images?.[zoomImageIndex] || ''"
+      [alt]="product?.name || 'Image produit'"
+      class="zoom-image"
+    />
+  </div>
+</p-dialog>
+
+<!-- Write Review Dialog -->
+<p-dialog
+  [(visible)]="showReviewDialog"
+  header="Donner mon avis"
+  [modal]="true"
+  [style]="{ width: '550px' }"
+  [closable]="true"
+  styleClass="review-dialog"
+>
+  <div class="review-form">
+    <div class="form-group">
+      <label>Note</label>
+      <p-rating [(ngModel)]="newReview.rating"></p-rating>
+    </div>
+
+    <div class="form-group">
+      <label>Titre de l'avis</label>
+      <input
+        type="text"
+        pInputText
+        [(ngModel)]="newReview.title"
+        placeholder="Ex: Magnifique produit !"
+        class="w-full"
+      />
+    </div>
+
+    <div class="form-group">
+      <label>Votre avis</label>
+      <textarea
+        pInputTextarea
+        [(ngModel)]="newReview.comment"
+        rows="5"
+        placeholder="Partagez votre expérience..."
+        class="w-full"
+      ></textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button class="btn-secondary" (click)="showReviewDialog = false">Annuler</button>
+    <button class="btn-primary" (click)="submitReview()" [disabled]="isSubmittingReview">
+      @if (!isSubmittingReview) {
+        <i class="pi pi-send"></i>
+      }
+      @if (isSubmittingReview) {
+        <i class="pi pi-spin pi-spinner"></i>
+      }
+      Publier mon avis
+    </button>
+  </ng-template>
+</p-dialog>
+
+<!-- Loading Skeleton -->

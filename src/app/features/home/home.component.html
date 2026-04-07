@@ -1,0 +1,333 @@
+<!-- home.component.html -->
+<div class="home-page">
+  <!-- Hero Carousel -->
+  <div class="hero-carousel">
+    <p-carousel
+      [value]="heroSlides"
+      [numVisible]="1"
+      [numScroll]="1"
+      [autoplayInterval]="5000"
+      [circular]="true"
+      [showIndicators]="true"
+      [showNavigators]="true"
+    >
+      <ng-template let-slide pTemplate="item">
+        <div
+          class="hero-slide"
+          [style.background-image]="
+            'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(' + slide.image + ')'
+          "
+        >
+          <div class="container px-3 md:px-5">
+            <div class="hero-content flex flex-column align-items-start">
+              <h1 class="hero-title">{{ slide.title }}</h1>
+              <p class="hero-subtitle">{{ slide.subtitle }}</p>
+              <a class="btn-primary hero-cta" routerLink="/products">{{ slide.cta }}</a>
+            </div>
+          </div>
+        </div>
+      </ng-template>
+    </p-carousel>
+  </div>
+
+  <!-- Produits Vedettes -->
+  <div class="section">
+    <div class="container px-3 md:px-5">
+      <div class="section-header flex flex-column align-items-center text-center">
+        <h2>Nos Produits Vedettes</h2>
+        <p>Découvrez notre sélection de bijoux les plus populaires</p>
+        <div class="section-line"></div>
+        <a class="section-cta" routerLink="/products">
+          Voir tous les produits
+          <i class="pi pi-arrow-right" aria-hidden="true"></i>
+        </a>
+      </div>
+
+      @if (!isLoading) {
+        <div class="products-grid grid">
+          @for (product of featuredProducts; track product.id) {
+            <div class="product-card">
+              <div class="product-image">
+                <img [src]="product.images[0]" [alt]="product.name" loading="lazy" decoding="async" />
+                <div class="product-actions-overlay">
+                  <button
+                    class="action-icon"
+                    (click)="addToCart(product)"
+                    title="Ajouter au panier"
+                    type="button"
+                    aria-label="Ajouter au panier"
+                  >
+                    <i class="pi pi-shopping-cart"></i>
+                  </button>
+                  <button
+                    class="action-icon"
+                    (click)="addToWishlist(product)"
+                    title="Ajouter aux favoris"
+                    type="button"
+                    aria-label="Ajouter aux favoris"
+                  >
+                    <i class="pi pi-heart"></i>
+                  </button>
+                  <a
+                    class="action-icon"
+                    [routerLink]="['/product', product.id]"
+                    title="Voir détails"
+                    aria-label="Voir détails"
+                  >
+                    <i class="pi pi-eye"></i>
+                  </a>
+                </div>
+                @if (product.isPromotion) {
+                  <div class="discount-badge">-{{ product.promotionPercentage }}%</div>
+                }
+              </div>
+              <div class="product-info">
+                <h3>
+                  <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
+                </h3>
+                <div class="product-price">
+                  <span class="current-price">{{
+                    getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
+                  }}</span>
+                  @if (product.discountPrice) {
+                    <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                  }
+                </div>
+                <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="products-grid">
+          @for (_ of [1, 2, 3, 4]; track _) {
+            <div class="skeleton-card">
+              <div class="skeleton skeleton-image"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text short"></div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Catégories -->
+  <div class="categories-section">
+    <div class="container px-3 md:px-5">
+      <div class="section-header flex flex-column align-items-center text-center">
+        <h2>Catégories</h2>
+        <p>Explorez notre collection par catégorie</p>
+        <div class="section-line"></div>
+      </div>
+
+      <p-carousel
+        [value]="categories"
+        [numVisible]="4"
+        [numScroll]="1"
+        [responsiveOptions]="categoryResponsiveOptions"
+        [circular]="true"
+        [autoplayInterval]="3500"
+        [showIndicators]="true"
+        [showNavigators]="true"
+        styleClass="category-carousel"
+      >
+        <ng-template pTemplate="item" let-category>
+          <a class="category-card" [routerLink]="category.link">
+            <div class="category-image">
+              <img [src]="category.image" [alt]="category.name" />
+            </div>
+
+            <div class="category-content">
+              <div class="category-meta">
+                <h3>{{ category.name }}</h3>
+                <span class="category-count">{{ category.count }} produits</span>
+              </div>
+              <span class="category-cta">Découvrir</span>
+            </div>
+          </a>
+        </ng-template>
+      </p-carousel>
+    </div>
+  </div>
+
+  <!-- Bannière Promotion -->
+  <div class="promo-banner">
+    <div class="container px-3 md:px-5">
+      <div
+        class="promo-content flex flex-column md:flex-row align-items-center justify-content-between gap-4"
+      >
+        <div class="promo-text">
+          <span class="promo-label">Offre Limitée</span>
+          <h2>Jusqu'à -30%</h2>
+          <p>Sur une sélection de bijoux</p>
+          <a class="btn-primary" routerLink="/products">Profiter de l'offre</a>
+        </div>
+        <div class="promo-image">
+          <img
+            src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
+            alt="Promotion"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nouveautés -->
+  <div class="section">
+    <div class="container px-3 md:px-5">
+      <div class="section-header flex flex-column align-items-center text-center">
+        <h2>Nouveautés</h2>
+        <p>Les dernières arrivages dans notre collection</p>
+        <div class="section-line"></div>
+      </div>
+
+      @if (!isLoading) {
+        <div class="products-grid grid">
+          @for (product of newArrivals; track product.id) {
+            <div class="product-card">
+              <div class="product-image">
+                <img [src]="product.images[0]" [alt]="product.name" loading="lazy" decoding="async" />
+                <div class="new-badge">Nouveau</div>
+              </div>
+              <div class="product-info">
+                <h3>
+                  <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
+                </h3>
+                <div class="product-price">
+                  <span class="current-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                </div>
+                <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="products-grid">
+          @for (_ of [1, 2, 3, 4]; track _) {
+            <div class="skeleton-card">
+              <div class="skeleton skeleton-image"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text short"></div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Témoignages -->
+  <div class="testimonials-section">
+    <div class="container px-3 md:px-5">
+      <div class="section-header flex flex-column align-items-center text-center">
+        <h2>Ce que nos clients disent</h2>
+        <p>Ils nous font confiance</p>
+        <div class="section-line"></div>
+      </div>
+
+      <div class="testimonials-grid grid">
+        @for (testimonial of testimonials; track testimonial.name) {
+          <div class="testimonial-card">
+            <div class="testimonial-avatar">
+              <img [src]="testimonial.image" [alt]="testimonial.name" loading="lazy" decoding="async" />
+            </div>
+            <p-rating [(ngModel)]="testimonial.rating" [readonly]="true"></p-rating>
+            <p class="testimonial-comment">"{{ testimonial.comment }}"</p>
+            <h4>{{ testimonial.name }}</h4>
+            <span class="testimonial-role">{{ testimonial.role }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Newsletter -->
+  <div class="newsletter-section">
+    <div class="container px-3 md:px-5">
+      <div class="newsletter-content flex flex-column align-items-center text-center">
+        <i class="pi pi-envelope"></i>
+        <h2>Newsletter</h2>
+        <p>Inscrivez-vous pour recevoir nos offres exclusives</p>
+        <form class="newsletter-form" #newsletterForm="ngForm" (ngSubmit)="subscribeNewsletter()">
+          <input
+            type="email"
+            class="newsletter-input"
+            placeholder="Votre email"
+            aria-label="Votre email"
+            autocomplete="email"
+            inputmode="email"
+            name="newsletterEmail"
+            required
+            email
+            [(ngModel)]="newsletterEmail"
+          />
+          <button class="btn-primary" type="submit" [disabled]="newsletterForm.invalid || newsletterState === 'saving'">
+            @if (newsletterState === 'saving') {
+              Inscription...
+            } @else {
+              S'inscrire
+            }
+          </button>
+        </form>
+
+        @if (newsletterState === 'success') {
+          <p class="newsletter-feedback success" role="status" aria-live="polite">{{ newsletterMessage }}</p>
+        } @else if (newsletterState === 'error') {
+          <p class="newsletter-feedback error" role="status" aria-live="polite">{{ newsletterMessage }}</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container px-3 md:px-5">
+      <div class="footer-grid grid">
+        <div class="footer-col">
+          <h3>VALERIA</h3>
+          <p>Des bijoux d'exception pour les femmes qui aiment l'élégance et la qualité.</p>
+          <div class="social-links">
+            <a href="#"><i class="pi pi-facebook"></i></a>
+            <a href="#"><i class="pi pi-instagram"></i></a>
+            <a href="#"><i class="pi pi-twitter"></i></a>
+            <a href="#"><i class="pi pi-pinterest"></i></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Liens Rapides</h4>
+          <ul>
+            <li><a routerLink="/home">Accueil</a></li>
+            <li><a routerLink="/products">Produits</a></li>
+            <li><a href="#">À propos</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Service Client</h4>
+          <ul>
+            <li><a href="#">FAQ</a></li>
+            <li><a href="#">Livraison</a></li>
+            <li><a href="#">Retours</a></li>
+            <li><a href="#">Paiement</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li><i class="pi pi-phone"></i> +212 6 23 45 67 89</li>
+            <li><i class="pi pi-envelope"></i> contact@valeria.com</li>
+            <li><i class="pi pi-map-marker"></i> Rabat, Maroc</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Valeria. Tous droits réservés.</p>
+        <div class="payment-methods">
+          <i class="pi pi-credit-card"></i>
+          <i class="pi pi-paypal"></i>
+          <i class="pi pi-apple"></i>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

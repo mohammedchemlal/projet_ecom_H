@@ -1,0 +1,88 @@
+:host {
+  display: block;
+}
+
+.checkout-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.checkout-hero {
+  padding: 2rem;
+  border-radius: 1.75rem;
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+  color: #fff;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.74rem;
+}
+
+.checkout-hero h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+  font-weight: 300;
+}
+
+.checkout-hero p {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+}
+
+.form-card,
+.summary-card {
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.checkout-form {
+  display: grid;
+  gap: 1rem;
+}
+
+label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.payment-box {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--bg-light);
+}
+
+.payment-box p {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+}
+
+.summary-card {
+  align-self: start;
+  padding: 1.25rem;
+}
+
+.summary-item,
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.65rem 0;
+}
+
+.total-row {
+  font-size: 1.05rem;
+}
+
+@media (max-width: 960px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,329 @@
+<div class="product-list-page">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <a routerLink="/home">Accueil</a>
+      <i class="pi pi-chevron-right"></i>
+      <span>Produits</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>Nos Bijoux</h1>
+      <p>Découvrez notre collection exclusive de bijoux fins et élégants</p>
+    </div>
+
+    <!-- Mobile Filter Toggle -->
+    <div class="mobile-filter-toggle">
+      <button class="filter-toggle-btn" (click)="sidebarVisible = true">
+        <i class="pi pi-filter"></i>
+        Filtrer
+        @if (getActiveFiltersCount() > 0) {
+          <span class="filter-badge">{{ getActiveFiltersCount() }}</span>
+        }
+      </button>
+      <div class="results-count-mobile">{{ totalProducts }} produits</div>
+    </div>
+
+    <div class="product-layout">
+      <!-- Sidebar Filters - Desktop -->
+      <aside class="filters-sidebar desktop-sidebar">
+        <div class="filters-header">
+          <h3>Filtres</h3>
+          @if (hasActiveFilters()) {
+            <button class="clear-all-btn" (click)="clearFilters()">
+              <i class="pi pi-times"></i>
+              Tout effacer
+            </button>
+          }
+        </div>
+
+        <!-- Categories Filter -->
+        <div class="filter-group">
+          <h4 class="filter-title">
+            <i class="pi pi-tags"></i>
+            Catégories
+          </h4>
+          <div class="categories-list">
+            @for (category of categories; track category) {
+              <div
+                class="category-item"
+                [class.active]="selectedCategories.includes(category.value)"
+                (click)="toggleCategory(category.value)"
+              >
+                <div class="category-info">
+                  <i [class]="'pi ' + category.icon"></i>
+                  <span>{{ category.label }}</span>
+                </div>
+                <span class="category-count">{{ category.count }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Price Filter -->
+        <div class="filter-group">
+          <h4 class="filter-title">
+            <i class="pi pi-dollar"></i>
+            Prix
+          </h4>
+          <div class="price-filter">
+            <p-slider
+              [(ngModel)]="priceRange"
+              [range]="true"
+              [min]="0"
+              [max]="maxPrice"
+              [style]="{ width: '100%' }"
+            ></p-slider>
+            <div class="price-range-values">
+              <div class="price-min">
+                <span>Min</span>
+                <strong>{{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+              </div>
+              <div class="price-max">
+                <span>Max</span>
+                <strong>{{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Promotions Filter -->
+        <div class="filter-group">
+          <div class="promo-filter" (click)="showPromotionsOnly = !showPromotionsOnly">
+            <div class="checkbox-custom" [class.checked]="showPromotionsOnly">
+              @if (showPromotionsOnly) {
+                <i class="pi pi-check"></i>
+              }
+            </div>
+            <div class="promo-content">
+              <i class="pi pi-tag"></i>
+              <span>En promotion uniquement</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Filters Tags -->
+        @if (hasActiveFilters()) {
+          <div class="active-filters">
+            @for (category of selectedCategories; track category) {
+              <div class="filter-tag" (click)="toggleCategory(category)">
+                <span>{{ getCategoryLabel(category) }}</span>
+                <i class="pi pi-times-circle"></i>
+              </div>
+            }
+            @if (priceRange[0] > 0 || priceRange[1] < maxPrice) {
+              <div class="filter-tag" (click)="priceRange = [0, maxPrice]">
+                <span
+                  >Prix: {{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }} -
+                  {{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span
+                >
+                <i class="pi pi-times-circle"></i>
+              </div>
+            }
+            @if (showPromotionsOnly) {
+              <div class="filter-tag" (click)="showPromotionsOnly = false">
+                <span>En promotion</span>
+                <i class="pi pi-times-circle"></i>
+              </div>
+            }
+          </div>
+        }
+      </aside>
+
+      <!-- Products Grid -->
+      <main class="products-main">
+        <!-- Sort and Results -->
+        <div class="products-toolbar">
+          <div class="results-count">
+            <span>{{ totalProducts }} produits trouvés</span>
+          </div>
+          <div class="sort-dropdown">
+            <i class="pi pi-sort-amount-down-alt"></i>
+            <p-select
+              [(ngModel)]="sortBy"
+              [options]="sortOptions"
+              optionLabel="label"
+              optionValue="value"
+              (ngModelChange)="applyFilters()"
+              placeholder="Trier par"
+              styleClass="sort-select"
+            ></p-select>
+          </div>
+        </div>
+
+        <!-- Products Grid -->
+        @if (!isLoading) {
+          <div class="products-grid">
+            @for (product of filteredProducts; track product) {
+              <div class="product-card">
+                <div class="product-image">
+                  <img [src]="product.images[0]" [alt]="product.name" loading="lazy" />
+                  <!-- Discount Badge -->
+                  @if (product.isPromotion) {
+                    <div class="discount-badge">-{{ getDiscountPercentage(product) }}%</div>
+                  }
+                  <!-- Quick Actions -->
+                  <div class="product-actions">
+                    <button
+                      class="action-btn wishlist-btn"
+                      [class.active]="isInWishlist(product.id)"
+                      (click)="addToWishlist(product)"
+                      title="Ajouter aux favoris"
+                    >
+                      <i class="pi pi-heart"></i>
+                    </button>
+                    <button
+                      class="action-btn quick-view-btn"
+                      [routerLink]="['/product', product.id]"
+                      title="Voir détails"
+                    >
+                      <i class="pi pi-eye"></i>
+                    </button>
+                  </div>
+                  <!-- Hover Add to Cart -->
+                  <div class="hover-add-to-cart">
+                    <button class="add-to-cart-btn" (click)="addToCart(product)">
+                      <i class="pi pi-shopping-cart"></i>
+                      Ajouter au panier
+                    </button>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h3 class="product-title">
+                    <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
+                  </h3>
+                  <div class="product-rating">
+                    <p-rating [ngModel]="product.rating" [readonly]="true"></p-rating>
+                    <span class="review-count">({{ product.reviewCount }})</span>
+                  </div>
+                  <div class="product-price">
+                    <span class="current-price">{{
+                      getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
+                    }}</span>
+                    @if (product.discountPrice) {
+                      <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                    }
+                  </div>
+                  <div class="product-actions-mobile">
+                    <button class="cart-btn-mobile" (click)="addToCart(product)">
+                      <i class="pi pi-shopping-cart"></i>
+                      Ajouter
+                    </button>
+                    <button
+                      class="wishlist-btn-mobile"
+                      [class.active]="isInWishlist(product.id)"
+                      (click)="addToWishlist(product)"
+                    >
+                      <i class="pi pi-heart"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+            <!-- Empty State -->
+            @if (filteredProducts.length === 0) {
+              <div class="empty-state">
+                <i class="pi pi-search"></i>
+                <h3>Aucun produit trouvé</h3>
+                <p>Essayez de modifier vos filtres ou rechercher autre chose</p>
+                <button class="btn-primary" (click)="clearFilters()">
+                  Effacer tous les filtres
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="products-grid">
+            @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track _) {
+              <div class="skeleton-card">
+                <div class="skeleton skeleton-image"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-text short"></div>
+                <div class="skeleton skeleton-price"></div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Pagination -->
+        @if (filteredProducts.length > 0) {
+          <div class="pagination-container">
+            <p-paginator
+              [rows]="itemsPerPage"
+              [totalRecords]="totalProducts"
+              (onPageChange)="onPageChange($event)"
+              [showCurrentPageReport]="true"
+              currentPageReportTemplate="Page {currentPage} sur {totalPages}"
+              [showFirstLastIcon]="true"
+              [showJumpToPageDropdown]="true"
+              [showPageLinks]="true"
+            ></p-paginator>
+          </div>
+        }
+      </main>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Sidebar Filters -->
+<p-drawer [(visible)]="sidebarVisible" position="left" styleClass="mobile-filters-sidebar">
+  <ng-template pTemplate="header">
+    <div class="sidebar-header">
+      <h3>Filtres</h3>
+      <button class="close-sidebar" (click)="sidebarVisible = false">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+  </ng-template>
+
+  <div class="sidebar-content">
+    <!-- Categories -->
+    <div class="filter-group-mobile">
+      <h4>Catégories</h4>
+      <div class="categories-mobile">
+        @for (category of categories; track category) {
+          <div
+            class="category-mobile"
+            [class.active]="selectedCategories.includes(category.value)"
+            (click)="toggleCategory(category.value)"
+          >
+            <span>{{ category.label }}</span>
+            <span class="count">{{ category.count }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Price Range -->
+    <div class="filter-group-mobile">
+      <h4>Prix</h4>
+      <p-slider [(ngModel)]="priceRange" [range]="true" [min]="0" [max]="maxPrice"></p-slider>
+      <div class="price-values">
+        <span>{{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+        <span>{{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+      </div>
+    </div>
+
+    <!-- Promotions -->
+    <div class="filter-group-mobile">
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="showPromotionsOnly" />
+        <span>En promotion uniquement</span>
+      </label>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="sidebar-footer">
+      <button class="btn-secondary" (click)="clearFilters(); sidebarVisible = false">
+        Effacer tout
+      </button>
+      <button class="btn-primary" (click)="applyFilters(); sidebarVisible = false">
+        Voir les résultats
+      </button>
+    </div>
+  </ng-template>
+</p-drawer>
+
+<!-- Skeleton Loader -->

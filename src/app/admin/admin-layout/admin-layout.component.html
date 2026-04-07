@@ -1,0 +1,97 @@
+<div class="admin-layout" [class.sidebar-open]="sidebarVisible">
+  @if (sidebarVisible) {
+    <button
+      type="button"
+      class="sidebar-backdrop"
+      aria-label="Fermer le menu"
+      (click)="closeSidebar()"
+    ></button>
+  }
+
+  <aside class="admin-sidebar" aria-label="Navigation admin">
+    <div class="sidebar-header">
+      <a class="admin-brand" routerLink="/home" aria-label="Aller à l'accueil" (click)="onNavigationClick()">
+        @if (!logoLoadFailed) {
+          <img
+            class="admin-logo-img"
+            [src]="siteLogoSrc"
+            alt="Valeria House of Jewels"
+            (error)="logoLoadFailed = true"
+          />
+        }
+
+        <span class="admin-logo-text">
+          <span class="brand">Valeria</span>
+          <span class="tagline">House of Jewels</span>
+        </span>
+      </a>
+    </div>
+
+    <nav class="sidebar-menu">
+      @for (item of navItems; track item.route; let itemIndex = $index) {
+        <div class="menu-row" [style.--item-index]="itemIndex">
+          <a
+            class="menu-link"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.route === '/admin/dashboard' }"
+            (click)="onNavigationClick()"
+          >
+            <span class="icon-wrap"><i [class]="item.icon"></i></span>
+            <span class="menu-copy">
+              <strong>{{ item.label }}</strong>
+              <small>{{ item.hint }}</small>
+            </span>
+          </a>
+
+          @if (item.badge) {
+            <button
+              type="button"
+              class="menu-badge"
+              [class.warning]="isWarningBadge(item.route)"
+              [class.danger]="isDangerBadge(item.route)"
+              [class.info]="isInfoBadge(item.route)"
+              [class.neutral]="!isWarningBadge(item.route) && !isDangerBadge(item.route) && !isInfoBadge(item.route)"
+              (click)="openBadgeRoute($event, item.route)"
+            >
+              {{ getBadgeLabel(item.badge) }}
+            </button>
+          }
+        </div>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" (click)="logout()">
+        <i class="pi pi-sign-out"></i>
+        <span>Déconnexion</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="admin-main">
+    <div class="admin-header">
+      <button class="toggle-sidebar" [class.open]="sidebarVisible" (click)="toggleSidebar()" aria-label="Ouvrir ou fermer le menu admin">
+        <i class="pi" [class.pi-bars]="!sidebarVisible" [class.pi-times]="sidebarVisible"></i>
+      </button>
+      <div class="admin-title">Administration</div>
+      <div class="admin-user">
+        @if (!headerLogoLoadFailed) {
+          <img
+            class="admin-user-logo"
+            [src]="siteLogoSrc"
+            alt="Valeria"
+            (error)="headerLogoLoadFailed = true"
+          />
+        } @else {
+          <i class="pi pi-user" aria-hidden="true"></i>
+        }
+        <span>{{ currentUserLabel }}</span>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

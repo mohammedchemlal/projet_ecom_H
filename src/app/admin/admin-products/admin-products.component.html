@@ -1,0 +1,209 @@
+<section class="admin-products">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Catalogue</p>
+      <h1>Gestion des produits</h1>
+      <p class="subtitle">Pilotez vos fiches produit, vos promotions et votre stock depuis un seul écran.</p>
+    </div>
+
+    <button pButton type="button" label="Nouveau produit" icon="pi pi-plus" (click)="openCreate()"></button>
+  </header>
+
+  <div class="summary-grid">
+    <article class="summary-card">
+      <span>Total catalogue</span>
+      <strong>{{ totalCount() }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Produits en promotion</span>
+      <strong>{{ promotionCount() }}</strong>
+    </article>
+    <article class="summary-card">
+      <span>Stock faible</span>
+      <strong>{{ lowStockCount() }}</strong>
+    </article>
+  </div>
+
+  <div class="filters-bar">
+    <label class="search-field">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        placeholder="Rechercher un produit..."
+      />
+    </label>
+
+    <label class="select-field">
+      <span>Catégorie</span>
+      <select [value]="selectedCategory()" (change)="onCategoryChange($event)">
+        <option value="">Toutes les catégories</option>
+        @for (category of categoryOptions(); track category.value) {
+          <option [value]="category.value">{{ category.label }}</option>
+        }
+      </select>
+    </label>
+
+    <button pButton type="button" label="Réinitialiser" class="p-button-outlined" (click)="clearFilters()"></button>
+  </div>
+
+  <p-table [value]="filteredProducts()" [loading]="!products().length && !filteredProducts().length" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Image</th>
+        <th>Nom</th>
+        <th>Prix</th>
+        <th>Stock</th>
+        <th>Catégorie</th>
+        <th>Statut</th>
+        <th>Promotion</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-product>
+      <tr>
+        <td>
+          <img class="product-thumb" [src]="getPrimaryImage(product)" [alt]="product.name" />
+        </td>
+        <td>
+          <div class="product-name-cell">
+            <strong>{{ product.name }}</strong>
+            <small>{{ product.description }}</small>
+          </div>
+        </td>
+        <td>
+          <div class="price-cell">
+            <strong>{{ (product.discountPrice ?? product.price) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+            @if (product.discountPrice) {
+              <span class="price-strike">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            }
+          </div>
+        </td>
+        <td>
+          <span class="stock-badge" [class.low-stock]="product.stock <= 5" [class.out-of-stock]="product.stock === 0">
+            {{ product.stock }}
+          </span>
+        </td>
+        <td>{{ getCategoryLabel(product.category) }}</td>
+        <td>
+          <p-tag [value]="product.isActive ? 'Actif' : 'Inactif'" [severity]="product.isActive ? 'success' : 'danger'"></p-tag>
+        </td>
+        <td>
+          <p-tag [value]="product.isPromotion ? 'Promo' : 'Standard'" [severity]="product.isPromotion ? 'warn' : 'info'"></p-tag>
+        </td>
+        <td>
+          <div class="actions-cell">
+            <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="openEdit(product)" aria-label="Modifier"></button>
+            <button pButton type="button" icon="pi pi-tags" class="p-button-text" (click)="togglePromotion(product)" aria-label="Promotion"></button>
+            <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="deleteProduct(product)" aria-label="Supprimer"></button>
+            <p-toggleswitch [(ngModel)]="product.isActive" (onChange)="toggleProductStatus(product)"></p-toggleswitch>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="dialogTitle()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(720px, 96vw)' }"
+  >
+    <form class="product-form" [formGroup]="productForm" (ngSubmit)="save()">
+      <div class="form-grid">
+        <div class="field">
+          <label for="product-name">Nom du produit *</label>
+          <input id="product-name" pInputText type="text" formControlName="name" />
+          @if (productForm.controls.name.invalid && (productForm.controls.name.dirty || productForm.controls.name.touched)) {
+            <small class="field-error">Le nom est obligatoire.</small>
+          }
+        </div>
+
+        <div class="field full-width">
+          <label for="product-description">Description *</label>
+          <textarea id="product-description" pInputTextarea rows="4" formControlName="description"></textarea>
+          @if (productForm.controls.description.invalid && (productForm.controls.description.dirty || productForm.controls.description.touched)) {
+            <small class="field-error">La description doit contenir au moins 10 caractères.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="product-price">Prix (DH) *</label>
+          <p-inputNumber inputId="product-price" formControlName="price" mode="currency" currency="MAD" locale="fr-MA"></p-inputNumber>
+        </div>
+
+        <div class="field">
+          <label for="product-discount">Prix promotionnel (DH)</label>
+          <p-inputNumber inputId="product-discount" formControlName="discountPrice" mode="currency" currency="MAD" locale="fr-MA"></p-inputNumber>
+        </div>
+
+        <div class="field">
+          <label for="product-category">Catégorie *</label>
+          <p-select
+            inputId="product-category"
+            formControlName="category"
+            [options]="categoryOptions()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Sélectionner"
+          ></p-select>
+        </div>
+
+        <div class="field">
+          <label for="product-stock">Stock *</label>
+          <p-inputNumber inputId="product-stock" formControlName="stock" [min]="0"></p-inputNumber>
+        </div>
+
+        <div class="field switch-field">
+          <label>Produit actif</label>
+          <p-toggleswitch formControlName="isActive"></p-toggleswitch>
+        </div>
+
+        <div class="field switch-field">
+          <label>En promotion</label>
+          <p-toggleswitch formControlName="isPromotion"></p-toggleswitch>
+        </div>
+
+        @if (productForm.controls.isPromotion.value) {
+          <div class="field">
+            <label for="promotion-percentage">Pourcentage de réduction</label>
+            <p-inputNumber inputId="promotion-percentage" formControlName="promotionPercentage" suffix=" %" [min]="0" [max]="90"></p-inputNumber>
+          </div>
+        }
+
+        <div class="field full-width">
+          <label>Images</label>
+          <p-fileUpload
+            name="images"
+            [multiple]="true"
+            accept="image/*"
+            [customUpload]="true"
+            [auto]="true"
+            chooseLabel="Ajouter des images"
+            (onSelect)="onImageUpload($event)"
+          ></p-fileUpload>
+
+          <div class="image-preview">
+            @for (image of uploadedImages(); track image; let index = $index) {
+              <figure class="preview-image">
+                <img [src]="image" alt="Aperçu" />
+                <button type="button" class="remove-image" (click)="removeImage(index)" aria-label="Supprimer l'image">×</button>
+              </figure>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button pButton type="button" label="Annuler" class="p-button-outlined" (click)="dialogVisible.set(false)"></button>
+        <button pButton type="submit" label="Enregistrer" icon="pi pi-check"></button>
+      </div>
+    </form>
+  </p-dialog>
+</section>

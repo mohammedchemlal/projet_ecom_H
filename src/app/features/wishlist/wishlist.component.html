@@ -1,0 +1,203 @@
+<div class="wishlist-page">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <a routerLink="/home">Accueil</a>
+      <i class="pi pi-chevron-right"></i>
+      <span>Mes favoris</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div>
+          <h1>Mes favoris</h1>
+          <p>{{ getTotalItems() }} {{ getTotalItems() === 1 ? 'produit' : 'produits' }} sauvegardés</p>
+        </div>
+        <div class="header-actions" *ngIf="!isEmpty()">
+          <button class="btn-outline" (click)="shareModalVisible = true">
+            <i class="pi pi-share-alt"></i>
+            Partager
+          </button>
+          <button class="btn-primary" (click)="addAllToCart()" [disabled]="isMovingAllToCart">
+            <i class="pi pi-spin pi-spinner" *ngIf="isMovingAllToCart"></i>
+            <i class="pi pi-shopping-cart" *ngIf="!isMovingAllToCart"></i>
+            Tout ajouter au panier
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty Wishlist -->
+    <div class="empty-wishlist" *ngIf="isEmpty() && !isLoading">
+      <div class="empty-icon">
+        <i class="pi pi-heart"></i>
+      </div>
+      <h2>Votre wishlist est vide</h2>
+      <p>Explorez nos collections et ajoutez vos bijoux préférés à vos favoris</p>
+      <button class="btn-primary" (click)="continueShopping()">
+        <i class="pi pi-shopping-bag"></i>
+        Découvrir nos produits
+      </button>
+    </div>
+
+    <!-- Wishlist Content -->
+    <div class="wishlist-content" *ngIf="!isEmpty() && !isLoading">
+      <!-- Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card">
+          <i class="pi pi-heart-fill"></i>
+          <div>
+            <span class="label">Total produits</span>
+            <span class="value">{{ getTotalItems() }}</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <i class="pi pi-tag"></i>
+          <div>
+            <span class="label">Valeur totale</span>
+            <span class="value">{{ getTotalValue() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+          </div>
+        </div>
+        <div class="summary-card">
+          <i class="pi pi-shopping-cart"></i>
+          <div>
+            <span class="label">Prêt à commander</span>
+            <span class="value">{{ getWishlistItemsInStock() }} produits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wishlist Items Grid -->
+      <div class="wishlist-grid">
+        <div *ngFor="let product of wishlistItems" class="wishlist-card">
+          <!-- Product Image -->
+          <div class="product-image" (click)="viewProduct(product)">
+            <img [src]="product.images[0]" [alt]="product.name" loading="lazy">
+            <div class="discount-badge" *ngIf="product.isPromotion">
+              -{{ getDiscountPercentage(product) }}%
+            </div>
+            <div class="stock-badge" [class]="getStockStatusClass(product)">
+              {{ getStockStatus(product) }}
+            </div>
+          </div>
+
+          <!-- Product Info -->
+          <div class="product-info">
+            <h3 class="product-name" (click)="viewProduct(product)">
+              {{ product.name }}
+            </h3>
+            
+            <div class="product-rating">
+              <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+              <span class="review-count">({{ product.reviewCount }} avis)</span>
+            </div>
+
+            <div class="product-price">
+              <span class="current-price">{{ getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              <span class="original-price" *ngIf="product.discountPrice">
+                {{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}
+              </span>
+            </div>
+
+            <div class="product-actions">
+              <button class="cart-btn" 
+                      (click)="addToCart(product)" 
+                      [disabled]="product.stock === 0"
+                      [class.out-of-stock]="product.stock === 0">
+                <i class="pi pi-shopping-cart"></i>
+                {{ product.stock > 0 ? 'Ajouter au panier' : 'Rupture de stock' }}
+              </button>
+              <button class="move-cart-btn" (click)="moveToCart(product)" title="Ajouter et retirer des favoris">
+                <i class="pi pi-arrow-right"></i>
+              </button>
+              <button class="remove-btn" (click)="removeFromWishlist(product)" title="Retirer des favoris">
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommended Products -->
+    <div class="recommended-section" *ngIf="!isEmpty()">
+      <h2 class="section-title">Vous pourriez aussi aimer</h2>
+      <div class="recommended-grid">
+        <div *ngFor="let product of recommendedProducts" class="recommended-card">
+          <div class="product-image" [routerLink]="['/product', product.id]">
+            <img [src]="product.images[0]" [alt]="product.name">
+            <div class="discount-badge" *ngIf="product.isPromotion">
+              -{{ getDiscountPercentage(product) }}%
+            </div>
+          </div>
+          <div class="product-info">
+            <h3 [routerLink]="['/product', product.id]">{{ product.name }}</h3>
+            <div class="product-price">
+              <span class="current-price">{{ getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              <span class="original-price" *ngIf="product.discountPrice">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            </div>
+            <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+            <button class="add-to-wishlist-btn" (click)="addToWishlistFromRecommended(product)">
+              <i class="pi pi-heart"></i>
+              Ajouter aux favoris
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Skeleton -->
+    <div class="loading-skeleton" *ngIf="isLoading">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-grid">
+        <div *ngFor="let _ of [1,2,3,4]" class="skeleton-card">
+          <div class="skeleton-image"></div>
+          <div class="skeleton-text"></div>
+          <div class="skeleton-text short"></div>
+          <div class="skeleton-button"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<p-dialog [(visible)]="shareModalVisible" 
+          header="Partager ma wishlist" 
+          [modal]="true" 
+          [style]="{width: '500px'}" 
+          [closable]="true"
+          styleClass="share-modal">
+  
+  <div class="share-content">
+    <p class="share-description">
+      Partagez votre sélection de bijoux préférés avec vos amis
+    </p>
+    
+    <div class="share-link-container">
+      <input type="text" [value]="shareLink" readonly class="share-link-input">
+      <button class="copy-btn" (click)="copyShareLink()">
+        <i class="pi pi-copy"></i>
+      </button>
+    </div>
+    
+    <div class="social-share">
+      <p>Partager sur :</p>
+      <div class="social-icons">
+        <button class="social-icon facebook" (click)="shareOnSocial('facebook')">
+          <i class="pi pi-facebook"></i>
+        </button>
+        <button class="social-icon twitter" (click)="shareOnSocial('twitter')">
+          <i class="pi pi-twitter"></i>
+        </button>
+        <button class="social-icon pinterest" (click)="shareOnSocial('pinterest')">
+          <i class="pi pi-pinterest"></i>
+        </button>
+        <button class="social-icon whatsapp" (click)="shareOnSocial('whatsapp')">
+          <i class="pi pi-whatsapp"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</p-dialog>

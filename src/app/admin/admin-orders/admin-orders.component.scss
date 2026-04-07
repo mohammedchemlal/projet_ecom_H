@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.admin-orders {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.order-info {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.order-total {
+  margin-top: 1rem;
+  text-align: right;
+}

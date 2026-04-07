@@ -1,0 +1,50 @@
+<section class="checkout-page">
+  <header class="checkout-hero">
+    <p class="eyebrow">Derniere etape</p>
+    <h1>Paiement</h1>
+    <p>Confirmez vos informations de livraison et validez votre commande.</p>
+  </header>
+
+  <div class="checkout-layout">
+    <p-card class="form-card">
+      <ng-template pTemplate="title">Informations de livraison</ng-template>
+      <form class="checkout-form" [formGroup]="form" (ngSubmit)="submitOrder()">
+        <label>
+          Nom complet
+          <input pInputText type="text" formControlName="fullName" placeholder="Votre nom complet" />
+        </label>
+        <label>
+          Adresse
+          <input pInputText type="text" formControlName="address" placeholder="Rue, ville, pays" />
+        </label>
+        <label>
+          Telephone
+          <input pInputText type="tel" formControlName="phone" placeholder="Numero de telephone" />
+        </label>
+
+        <div class="payment-box">
+          <p-tag value="Paiement a la livraison" severity="success"></p-tag>
+          <p>Ce magasin accepte uniquement le paiement a la livraison.</p>
+        </div>
+
+        <button pButton type="submit" label="Confirmer la commande" icon="pi pi-check"></button>
+      </form>
+    </p-card>
+
+    <aside class="summary-card">
+      <h2>Recapitulatif</h2>
+
+      @for (item of cartItems(); track item.productId) {
+        <article class="summary-item">
+          <span>{{ item.product.name }} x{{ item.quantity }}</span>
+          <strong>{{ ((item.product.discountPrice || item.product.price) * item.quantity) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+        </article>
+      }
+
+      <p-divider></p-divider>
+      <div class="summary-row"><span>Sous-total</span><strong>{{ subtotal() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      <div class="summary-row"><span>Livraison</span><strong>{{ shipping | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      <div class="summary-row total-row"><span>Total</span><strong>{{ total() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+    </aside>
+  </div>
+</section>

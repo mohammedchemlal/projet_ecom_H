@@ -1,0 +1,120 @@
+<div class="admin-dashboard">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <i class="pi pi-users"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ stats.totalUsers }}</h3>
+        <p>Utilisateurs</p>
+        <span class="trend up">+12%</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <i class="pi pi-shopping-cart"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ stats.totalOrders }}</h3>
+        <p>Commandes</p>
+        <span class="trend up">+8%</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <i class="pi pi-euro"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ stats.totalRevenue | currency:'EUR' }}</h3>
+        <p>Revenus</p>
+        <span class="trend up">+15%</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+        <i class="pi pi-box"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ stats.totalProducts }}</h3>
+        <p>Produits</p>
+        <span class="trend">+5</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>Ventes mensuelles</h3>
+      <div class="chart-container">
+        <p-chart type="line" [data]="salesChartData" [options]="salesChartOptions"></p-chart>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Ventes par catégorie</h3>
+      <div class="chart-container">
+        <p-chart type="doughnut" [data]="categoryChartData" [options]="categoryChartOptions"></p-chart>
+      </div>
+    </div>
+  </div>
+
+  <div class="tables-grid">
+    <div class="table-card">
+      <div class="card-header">
+        <h3>Commandes récentes</h3>
+        <button class="view-all" routerLink="/admin/orders">Voir tout</button>
+      </div>
+      <p-table [value]="recentOrders" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>N° Commande</th>
+            <th>Client</th>
+            <th>Total</th>
+            <th>Statut</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-order>
+          <tr>
+            <td>#{{ order.id }}</td>
+            <td>{{ order.userName }}</td>
+            <td>{{ order.total | currency:'EUR' }}</td>
+            <td>
+              <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)"></p-tag>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <div class="table-card">
+      <div class="card-header">
+        <h3>Stock faible</h3>
+        <button class="view-all" routerLink="/admin/products">Voir tout</button>
+      </div>
+      <p-table [value]="lowStockProducts" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Produit</th>
+            <th>Stock</th>
+            <th>Statut</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-product>
+          <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.stock }}</td>
+            <td>
+              <p-tag
+                [value]="product.stock === 0 ? 'Rupture' : 'Stock faible'"
+                [severity]="product.stock === 0 ? 'danger' : 'warn'">
+              </p-tag>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>

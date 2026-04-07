@@ -1,0 +1,83 @@
+<section class="admin-categories">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Catalogue</p>
+      <h1>Gestion des categories</h1>
+      <p class="subtitle">Organisez les familles de produits visibles sur le site.</p>
+    </div>
+
+    <button pButton type="button" label="Nouvelle categorie" icon="pi pi-plus" (click)="openNew()"></button>
+  </header>
+
+  <p-table [value]="categories()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Libelle</th>
+        <th>Valeur</th>
+        <th>Icone</th>
+        <th>Description</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-category>
+      <tr>
+        <td>{{ category.label }}</td>
+        <td>{{ category.value }}</td>
+        <td>
+          <span class="icon-pill">
+            <i [class]="category.icon"></i>
+            {{ category.icon }}
+          </span>
+        </td>
+        <td>{{ category.description || '-' }}</td>
+        <td>
+          <div class="actions-cell">
+            <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editCategory(category)" aria-label="Modifier"></button>
+            <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="deleteCategory(category)" aria-label="Supprimer"></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [visible]="categoryDialog()"
+    (visibleChange)="categoryDialog.set($event)"
+    [header]="isEditing() ? 'Modifier la categorie' : 'Nouvelle categorie'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(620px, 96vw)' }"
+  >
+    <form class="category-form" [formGroup]="categoryForm" (ngSubmit)="saveCategory()">
+      <div class="form-grid">
+        <div class="field">
+          <label for="category-label">Libelle *</label>
+          <input id="category-label" pInputText type="text" formControlName="label" />
+        </div>
+
+        <div class="field">
+          <label for="category-value">Valeur *</label>
+          <input id="category-value" pInputText type="text" formControlName="value" placeholder="Ex: necklaces" />
+        </div>
+
+        <div class="field">
+          <label for="category-icon">Icone Prime *</label>
+          <input id="category-icon" pInputText type="text" formControlName="icon" placeholder="Ex: pi pi-gem" />
+        </div>
+
+        <div class="field full-width">
+          <label for="category-description">Description</label>
+          <textarea id="category-description" pInputTextarea rows="3" formControlName="description"></textarea>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button pButton type="button" label="Annuler" class="p-button-outlined" (click)="categoryDialog.set(false)"></button>
+        <button pButton type="submit" label="Enregistrer" icon="pi pi-check"></button>
+      </div>
+    </form>
+
+  </p-dialog>
+</section>
