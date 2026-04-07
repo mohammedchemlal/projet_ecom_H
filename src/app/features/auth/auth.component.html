@@ -2,8 +2,7 @@
   <div class="auth-container">
     <!-- Logo -->
     <div class="auth-logo" routerLink="/home">
-      <img src="https://i.ibb.co/your-logo/logo.png" alt="LuxeAccessories" class="logo-img" />
-      <span class="logo-text">LUXE<span class="accent">ACCESSORIES</span></span>
+      <span class="logo-text">ValeriaHouse <span class="accent">of Jewels</span></span>
     </div>
 
     <!-- Tabs -->
@@ -19,28 +18,6 @@
         Inscription
       </button>
     </div>
-
-    <!-- Social Login -->
-    @if (activeTab === 'login') {
-      <div class="social-login">
-        <p>Connectez-vous avec</p>
-        <div class="social-buttons">
-          @for (social of socialLogins; track social) {
-            <button
-              class="social-btn"
-              [style.background]="social.color"
-              (click)="socialLogin(social.name)"
-            >
-              <i [class]="'pi ' + social.icon"></i>
-              <span>{{ social.name }}</span>
-            </button>
-          }
-        </div>
-        <div class="divider">
-          <span>ou</span>
-        </div>
-      </div>
-    }
 
     <!-- Login Form -->
     @if (activeTab === 'login') {

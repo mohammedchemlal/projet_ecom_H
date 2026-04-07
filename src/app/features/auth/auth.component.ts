@@ -19,13 +19,6 @@ export class AuthComponent implements OnInit {
   isLoading = false;
   showPassword = false;
   showConfirmPassword = false;
-  
-  // Social login
-  socialLogins = [
-    { name: 'Google', icon: 'pi-google', color: '#DB4437' },
-    { name: 'Facebook', icon: 'pi-facebook', color: '#4267B2' },
-    { name: 'Apple', icon: 'pi-apple', color: '#000000' }
-  ];
 
   constructor(
     private fb: FormBuilder,
@@ -144,15 +137,6 @@ export class AuthComponent implements OnInit {
         this.isLoading = false;
       }
     });
-  }
-
-  socialLogin(provider: string) {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Connexion sociale',
-      detail: `Connexion avec ${provider} (démo)`
-    });
-    // Implement social login logic here
   }
 
   forgotPassword() {

@@ -25,5 +25,8 @@ export class App {
     { initialValue: this.router.url }
   );
 
-  readonly hideHeader = computed(() => this.currentUrl().startsWith('/admin'));
+  readonly hideHeader = computed(() => {
+    const url = this.currentUrl();
+    return url.startsWith('/admin') || url.startsWith('/auth');
+  });
 }
