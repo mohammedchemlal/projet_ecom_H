@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -24,9 +24,17 @@ export class RegisterComponent {
     fullName: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
+    confirmPassword: ['', [Validators.required]],
     address: ['', [Validators.required, Validators.minLength(8)]],
     phone: ['', [Validators.required, Validators.minLength(6)]]
-  });
+  }, { validators: [this.passwordMatchValidator] });
+
+  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password')?.value;
+    const confirmPassword = control.get('confirmPassword')?.value;
+
+    return password === confirmPassword ? null : { passwordMismatch: true };
+  }
 
   submit(): void {
     if (this.form.invalid) {
