@@ -1,7 +1,13 @@
 .cart-page {
+  --cart-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.84));
+  --cart-line: rgba(var(--primary-rgb), 0.12);
+  --cart-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
   min-height: 100vh;
-  padding: 120px 0 60px;
-  background: var(--bg-light);
+  padding: 2rem 0 60px;
+  background:
+    radial-gradient(circle at 100% -10%, rgba(var(--primary-rgb), 0.11), transparent 34%),
+    radial-gradient(circle at -5% 100%, rgba(var(--accent-rgb), 0.08), transparent 36%),
+    var(--bg-light);
 
   .container {
     max-width: 1400px;
@@ -42,6 +48,17 @@
   .page-header {
     text-align: center;
     margin-bottom: 3rem;
+    animation: ui-fade-up 0.45s ease both;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 110px;
+      height: 3px;
+      margin: 0.9rem auto 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    }
 
     h1 {
       font-size: 2.5rem;
@@ -59,9 +76,11 @@
   .empty-cart {
     text-align: center;
     padding: 4rem;
-    background: white;
+    background: var(--cart-glass);
     border-radius: 20px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--cart-shadow);
+    border: 1px solid var(--cart-line);
+    animation: ui-fade-up 0.45s ease both;
 
     i {
       font-size: 5rem;
@@ -87,10 +106,12 @@
     gap: 2rem;
 
     .cart-main {
-      background: white;
+      background: var(--cart-glass);
       border-radius: 20px;
       padding: 1.5rem;
-      box-shadow: var(--shadow-sm);
+      box-shadow: var(--cart-shadow);
+      border: 1px solid var(--cart-line);
+      animation: ui-fade-up 0.45s ease 0.08s both;
 
       .cart-header {
         display: grid;
@@ -323,10 +344,24 @@
       gap: 1.5rem;
 
       .summary-card, .promo-card, .payment-card {
-        background: white;
+        background: var(--cart-glass);
         border-radius: 20px;
         padding: 1.5rem;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--cart-shadow);
+        border: 1px solid var(--cart-line);
+        animation: ui-fade-up 0.45s ease both;
+
+        &:nth-child(1) {
+          animation-delay: 0.12s;
+        }
+
+        &:nth-child(2) {
+          animation-delay: 0.18s;
+        }
+
+        &:nth-child(3) {
+          animation-delay: 0.24s;
+        }
 
         h3 {
           font-size: 1.1rem;
@@ -381,7 +416,7 @@
 
         .btn-checkout {
           width: 100%;
-          background: var(--primary-color);
+          background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
           color: white;
           border: none;
           padding: 1rem;
@@ -574,6 +609,7 @@
   // Recommended Products
   .recommended-section {
     margin-top: 4rem;
+    animation: ui-fade-up 0.45s ease 0.15s both;
 
     .section-title {
       font-size: 1.5rem;
@@ -599,11 +635,19 @@
       gap: 2rem;
 
       .recommended-card {
-        background: white;
+        background: var(--cart-glass);
         border-radius: 12px;
         overflow: hidden;
         transition: all 0.3s ease;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--cart-shadow);
+        border: 1px solid var(--cart-line);
+        animation: ui-fade-up 0.4s ease both;
+
+        @for $i from 1 through 8 {
+          &:nth-child(#{$i}) {
+            animation-delay: #{0.05s * $i};
+          }
+        }
 
         &:hover {
           transform: translateY(-5px);
@@ -733,9 +777,21 @@
   }
 }
 
+@keyframes ui-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 // Loading Skeleton
 .loading-skeleton {
-  padding: 120px 0 60px;
+  padding: 2rem 0 60px;
 
   .skeleton-cart-header {
     height: 40px;
@@ -849,6 +905,46 @@
   .recommended-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 1rem !important;
+  }
+}
+
+.cart-page {
+  button,
+  a,
+  input {
+    &:focus-visible {
+      outline: 2px solid rgba(var(--primary-rgb), 0.55);
+      outline-offset: 2px;
+    }
+  }
+
+  .qty-btn,
+  .action-btn,
+  .apply-btn,
+  .btn-checkout,
+  .add-to-cart-btn {
+    &:active {
+      transform: translateY(1px) scale(0.99);
+    }
+  }
+
+  .promo-input,
+  .quantity-input {
+    &:hover {
+      border-color: rgba(var(--primary-rgb), 0.24);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-page {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

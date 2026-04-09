@@ -136,7 +136,7 @@ export class AdminPromoCodesComponent implements OnInit {
       rejectLabel: 'Annuler',
       accept: () => {
         this.promoCodeService.deletePromoCode(promo.id).subscribe(() => {
-          this.loadPromoCodes();
+          this.promoCodes.update((codes) => codes.filter((item) => item.id !== promo.id));
           this.messageService.add({
             severity: 'success',
             summary: 'Succes',
@@ -154,16 +154,28 @@ export class AdminPromoCodesComponent implements OnInit {
     }
 
     const formValue = this.promoForm.getRawValue();
+    const originalInput = (formValue.code ?? '').toString();
+    const cleanedInput = originalInput.trim();
+    const normalizedCode = cleanedInput.replace(/[^a-z0-9]/gi, '').toUpperCase();
+    if (normalizedCode && normalizedCode !== cleanedInput.toUpperCase()) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Code normalisé',
+        detail: `Le code sera enregistré sous "${normalizedCode}" (normalisation appliquée).`
+      });
+    }
+
     const payload = {
       ...formValue,
+      code: normalizedCode,
       validFrom: formValue.validFrom ?? new Date(),
       validTo: formValue.validTo ?? new Date()
     } satisfies Omit<PromoCode, 'id'>;
     const selectedPromo = this.selectedPromo();
 
     if (this.isEditing() && selectedPromo) {
-      this.promoCodeService.updatePromoCode(selectedPromo.id, payload).subscribe(() => {
-        this.loadPromoCodes();
+      this.promoCodeService.updatePromoCode(selectedPromo.id, payload).subscribe((updatedPromo) => {
+        this.promoCodes.update((codes) => codes.map((item) => (item.id === selectedPromo.id ? updatedPromo : item)));
         this.messageService.add({
           severity: 'success',
           summary: 'Succes',
@@ -175,8 +187,8 @@ export class AdminPromoCodesComponent implements OnInit {
       return;
     }
 
-    this.promoCodeService.createPromoCode(payload).subscribe(() => {
-      this.loadPromoCodes();
+    this.promoCodeService.createPromoCode(payload).subscribe((createdPromo) => {
+      this.promoCodes.update((codes) => [createdPromo, ...codes]);
       this.messageService.add({
         severity: 'success',
         summary: 'Succes',
@@ -187,7 +199,8 @@ export class AdminPromoCodesComponent implements OnInit {
   }
 
   togglePromoStatus(promo: PromoCode, checked: boolean): void {
-    this.promoCodeService.updatePromoCode(promo.id, { isActive: checked }).subscribe(() => {
+    this.promoCodeService.updatePromoCode(promo.id, { isActive: checked }).subscribe((updatedPromo) => {
+      this.promoCodes.update((codes) => codes.map((item) => (item.id === promo.id ? updatedPromo : item)));
       this.messageService.add({
         severity: 'success',
         summary: 'Succes',

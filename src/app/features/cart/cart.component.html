@@ -158,28 +158,13 @@
             }
             <div class="summary-row">
               <span>Livraison</span>
-              @if (getShippingCost() === 0) {
-                <span class="free-shipping">Gratuite</span>
-              }
-              @if (getShippingCost() > 0) {
-                <span>{{ getShippingCost() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-              }
+              <span class="free-shipping">Gratuite</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-row total">
               <span>Total</span>
               <span>{{ getTotal() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
             </div>
-            @if (getSubtotal() - getDiscountAmount() < freeShippingThreshold) {
-              <div class="free-shipping-info">
-                <i class="pi pi-truck"></i>
-                Plus que
-                {{
-                  freeShippingThreshold - (getSubtotal() - getDiscountAmount()) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
-                }}
-                pour la livraison gratuite
-              </div>
-            }
             <button class="btn-checkout" (click)="proceedToCheckout()">
               <i class="pi pi-lock"></i>
               Passer la commande
@@ -213,27 +198,19 @@
                 <div class="promo-badge">
                   <i class="pi pi-ticket"></i>
                   <span>{{ appliedPromo.code }}</span>
-                  <span class="discount-value">-{{ appliedPromo.discount }}%</span>
+                  <span class="discount-value">
+                    -{{ appliedPromo.type === 'fixed' ? (appliedPromo.discount | currency:'MAD':'symbol':'1.0-0':'fr-MA') : (appliedPromo.discount + '%') }}
+                  </span>
                 </div>
                 <button class="remove-promo" (click)="removePromoCode()">
                   <i class="pi pi-times"></i>
                 </button>
               </div>
             }
-            <div class="available-codes">
-              <p>Codes disponibles :</p>
-              <div class="code-tags">
-                @for (code of availablePromoCodes; track code) {
-                  <span class="code-tag">
-                    {{ code.code }}
-                  </span>
-                }
-              </div>
-            </div>
           </div>
           <!-- Payment Methods -->
           <div class="payment-card">
-            <h3>Paiement sécurisé</h3>
+            <h3>Paiement à la livraison</h3>
             <div class="payment-methods">
               @for (method of paymentMethods; track method) {
                 <div class="payment-method" [class.active]="selectedPaymentMethod === method.value">
@@ -243,8 +220,8 @@
               }
             </div>
             <div class="security-badge">
-              <i class="pi pi-shield"></i>
-              <span>Paiement 100% sécurisé</span>
+              <i class="pi pi-wallet"></i>
+              <span>Règlement à la réception de la commande</span>
             </div>
           </div>
         </div>
@@ -293,28 +270,14 @@
           <i class="pi pi-truck"></i>
           <div>
             <strong>Livraison gratuite</strong>
-            <span>À partir de 500 DH</span>
+            <span>Sans frais</span>
           </div>
         </div>
         <div class="trust-item">
-          <i class="pi pi-refresh"></i>
+          <i class="pi pi-wallet"></i>
           <div>
-            <strong>Retours gratuits</strong>
-            <span>Sous 30 jours</span>
-          </div>
-        </div>
-        <div class="trust-item">
-          <i class="pi pi-lock"></i>
-          <div>
-            <strong>Paiement sécurisé</strong>
-            <span>CB, PayPal, Apple Pay</span>
-          </div>
-        </div>
-        <div class="trust-item">
-          <i class="pi pi-headphones"></i>
-          <div>
-            <strong>Service client</strong>
-            <span>7j/7</span>
+            <strong>Paiement à la livraison</strong>
+            <span>Payez à la réception</span>
           </div>
         </div>
       </div>

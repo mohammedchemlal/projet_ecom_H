@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { RatingModule } from 'primeng/rating';
-import { CartService } from '../../core/services/cart.service';
+import { Subscription } from 'rxjs';
+import { CartService, type CartPromo } from '../../core/services/cart.service';
+import { PromoCodeService } from '../../core/services/promo-code.service';
+import { ProductService } from '../../core/services/product.service';
 import { WishlistService } from '../../core/services/wishlist.service';
 import { CartItem } from '../../shared/models/cart-item.model';
 import { Product } from '../../shared/models/product.model';
@@ -21,7 +24,7 @@ export class CartComponent implements OnInit, OnDestroy {
   
   // Promo code
   promoCode = '';
-  appliedPromo: { code: string; discount: number } | null = null;
+  appliedPromo: CartPromo | null = null;
   isApplyingPromo = false;
   
   // Recommended products
@@ -29,7 +32,6 @@ export class CartComponent implements OnInit, OnDestroy {
   
   // Shipping
   shippingCost = 0;
-  freeShippingThreshold = 50;
   
   // Payment methods
   paymentMethods = [
@@ -37,8 +39,11 @@ export class CartComponent implements OnInit, OnDestroy {
   ];
   selectedPaymentMethod = 'cod';
 
+  private cartSubscription?: Subscription;
+  private promoSubscription?: Subscription;
+
   // Available promo codes
-  availablePromoCodes = [
+  readonly availablePromoCodes: Array<{ code: string; discount: number; type: CartPromo['type'] }> = [
     { code: 'WELCOME10', discount: 10, type: 'percentage' },
     { code: 'SAVE20', discount: 20, type: 'percentage' },
     { code: 'FREESHIP', discount: 5, type: 'fixed' }
@@ -46,78 +51,44 @@ export class CartComponent implements OnInit, OnDestroy {
 
   constructor(
     private cartService: CartService,
+    private productService: ProductService,
     private wishlistService: WishlistService,
     private messageService: MessageService,
-    private router: Router
+    private router: Router,
+    private promoService: PromoCodeService
   ) {}
 
   ngOnInit() {
     this.loadCart();
+    this.loadPromo();
     this.loadRecommendedProducts();
   }
 
   ngOnDestroy() {
-    // Cleanup
+    this.cartSubscription?.unsubscribe();
+    this.promoSubscription?.unsubscribe();
   }
 
   loadCart() {
     this.isLoading = true;
-    this.cartService.cartItems$.subscribe(items => {
+    this.cartSubscription?.unsubscribe();
+    this.cartSubscription = this.cartService.cartItems$.subscribe(items => {
       this.cartItems = items;
       this.isLoading = false;
     });
   }
 
+  loadPromo() {
+    this.promoSubscription?.unsubscribe();
+    this.promoSubscription = this.cartService.appliedPromo$.subscribe((promo) => {
+      this.appliedPromo = promo;
+    });
+  }
+
   loadRecommendedProducts() {
-    // Mock recommended products based on cart items
-    this.recommendedProducts = [
-      {
-        id: 101,
-        name: 'Collier Élégance Dorée',
-        description: '',
-        price: 89.99,
-        discountPrice: 67.49,
-        images: ['https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300'],
-        category: 'necklaces',
-        rating: 4.8,
-        reviewCount: 124,
-        stock: 15,
-        isActive: true,
-        isPromotion: true,
-        promotionPercentage: 25,
-        createdAt: new Date()
-      },
-      {
-        id: 102,
-        name: 'Bague Solitaire Argent',
-        description: '',
-        price: 149.99,
-        images: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=300'],
-        category: 'rings',
-        rating: 4.9,
-        reviewCount: 89,
-        stock: 23,
-        isActive: true,
-        isPromotion: false,
-        createdAt: new Date()
-      },
-      {
-        id: 103,
-        name: 'Bracelet Chaîne Or Rose',
-        description: '',
-        price: 89.99,
-        discountPrice: 71.99,
-        images: ['https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=300'],
-        category: 'bracelets',
-        rating: 4.7,
-        reviewCount: 56,
-        stock: 30,
-        isActive: true,
-        isPromotion: true,
-        promotionPercentage: 20,
-        createdAt: new Date()
-      }
-    ];
+    this.productService.getFeaturedProducts().subscribe((products) => {
+      this.recommendedProducts = products.filter((product) => product.isActive).slice(0, 4);
+    });
   }
 
   updateQuantity(item: CartItem, newQuantity: number) {
@@ -154,34 +125,61 @@ export class CartComponent implements OnInit, OnDestroy {
     }
 
     this.isApplyingPromo = true;
-    
-    // Simulate API call
-    setTimeout(() => {
-      const found = this.availablePromoCodes.find(
-        p => p.code === this.promoCode.toUpperCase()
-      );
 
-      if (found) {
-        this.appliedPromo = { code: found.code, discount: found.discount };
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Code appliqué',
-          detail: `Code ${found.code} appliqué avec succès !`
-        });
-        this.promoCode = '';
-      } else {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Code invalide',
-          detail: 'Ce code promo n\'existe pas ou a expiré'
-        });
+    // Simulate API latency
+    setTimeout(() => {
+      const input = (this.promoCode ?? '').toString();
+      const normalized = input.replace(/[^a-z0-9]/gi, '').toUpperCase();
+
+      const promo = this.promoService.validate(normalized);
+
+      if (!promo) {
+        this.messageService.add({ severity: 'error', summary: 'Code invalide', detail: "Ce code promo n'existe pas." });
+        this.isApplyingPromo = false;
+        return;
       }
+
+      // check active
+      if (!promo.isActive) {
+        this.messageService.add({ severity: 'error', summary: 'Code inactif', detail: 'Ce code promo est désactivé.' });
+        this.isApplyingPromo = false;
+        return;
+      }
+
+      const now = Date.now();
+      if (promo.validTo.getTime() < now) {
+        this.messageService.add({ severity: 'error', summary: 'Expiré', detail: 'Ce code promo a expiré.' });
+        this.isApplyingPromo = false;
+        return;
+      }
+
+      const subtotal = this.getSubtotal();
+      if (subtotal < (promo.minOrderAmount || 0)) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Montant minimum',
+          detail: `Le panier doit atteindre ${promo.minOrderAmount} DH pour utiliser ce code.`
+        });
+        this.isApplyingPromo = false;
+        return;
+      }
+
+      if (promo.usageLimit && promo.usedCount >= promo.usageLimit) {
+        this.messageService.add({ severity: 'error', summary: 'Limite atteinte', detail: 'Ce code a atteint sa limite d\'utilisation.' });
+        this.isApplyingPromo = false;
+        return;
+      }
+
+      // All checks passed
+      this.cartService.setAppliedPromo({ code: promo.code, discount: promo.discount, type: promo.type });
+      this.messageService.add({ severity: 'success', summary: 'Code appliqué', detail: `Code ${promo.code} appliqué avec succès !` });
+      this.promoCode = '';
       this.isApplyingPromo = false;
-    }, 800);
+    }, 600);
   }
 
   removePromoCode() {
-    this.appliedPromo = null;
+    this.cartService.clearPromoCode();
     this.messageService.add({
       severity: 'info',
       summary: 'Code retiré',
@@ -200,13 +198,15 @@ export class CartComponent implements OnInit, OnDestroy {
     if (!this.appliedPromo) return 0;
     
     const subtotal = this.getSubtotal();
-    // For simplicity, assuming percentage discount
+
+    if (this.appliedPromo.type === 'fixed') {
+      return Math.min(subtotal, this.appliedPromo.discount);
+    }
+
     return (subtotal * this.appliedPromo.discount) / 100;
   }
 
   getShippingCost(): number {
-    const subtotal = this.getSubtotal() - this.getDiscountAmount();
-    if (subtotal >= this.freeShippingThreshold) return 0;
     return this.shippingCost;
   }
 

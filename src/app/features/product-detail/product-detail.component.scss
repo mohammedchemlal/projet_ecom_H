@@ -1,6 +1,6 @@
 .product-detail-page {
   min-height: 100vh;
-  padding: 120px 0 60px;
+  padding: 2rem 0 60px;
   background: var(--bg-light);
 
   .container {
@@ -588,6 +588,15 @@
               height: 50px;
               border-radius: 50%;
               object-fit: cover;
+
+              &.reviewer-avatar-placeholder {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(199, 142, 58, 0.14);
+                color: var(--primary-color);
+                font-size: 1.15rem;
+              }
             }
 
             .reviewer-info {

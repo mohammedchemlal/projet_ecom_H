@@ -7,9 +7,47 @@
   gap: 1rem;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .page-header h2 {
   margin: 0;
   font-size: 1.6rem;
+}
+
+.orders-filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.7fr) minmax(160px, 1fr) minmax(170px, 1fr) minmax(150px, 1fr) minmax(150px, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.search-field,
+.search-field input {
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .orders-filters {
+    grid-template-columns: minmax(220px, 1.5fr) minmax(160px, 1fr) minmax(170px, 1fr) minmax(150px, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .orders-filters {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .orders-filters {
+    grid-template-columns: 1fr;
+  }
 }
 
 .order-info {
@@ -21,4 +59,56 @@
 .order-total {
   margin-top: 1rem;
   text-align: right;
+}
+
+.create-order-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.create-order-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.order-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 0.5rem;
+}
+
+:host ::ng-deep .p-datatable .has-promo-row > td {
+  background: linear-gradient(90deg, rgba(245, 255, 250, 0.9) 0%, rgba(255, 255, 255, 1) 55%);
+}
+
+.promo-chip,
+.discount-chip,
+.empty-value {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.promo-chip {
+  color: #0b6b44;
+  background-color: #ddf8eb;
+  border: 1px solid #bce8d4;
+}
+
+.discount-chip {
+  color: #8a3b12;
+  background-color: #ffe9dc;
+  border: 1px solid #ffd0b3;
+}
+
+.empty-value {
+  color: #7b8794;
+  background-color: #f4f6f8;
+  border: 1px solid #e5e9ef;
 }

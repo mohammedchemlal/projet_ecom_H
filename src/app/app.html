@@ -4,6 +4,6 @@
 <p-toast position="top-right"></p-toast>
 <p-confirmDialog appendTo="body"></p-confirmDialog>
 
-<main >
+<main class="app-main" [class.with-header]="!hideHeader()">
   <router-outlet></router-outlet>
 </main>                 

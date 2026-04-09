@@ -8,3 +8,18 @@
 	position: relative;
 	z-index: 1;
 }
+
+.app-main {
+	position: relative;
+	z-index: 1;
+}
+
+.app-main.with-header {
+	padding-top: 92px;
+}
+
+@media (max-width: 768px) {
+	.app-main.with-header {
+		padding-top: 84px;
+	}
+}

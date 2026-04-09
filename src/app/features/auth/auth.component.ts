@@ -32,7 +32,7 @@ export class AuthComponent implements OnInit {
   ngOnInit() {
     // Redirect if already logged in
     if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/home']);
+      this.redirectByRole(this.authService.getCurrentUser()?.role);
     }
   }
 
@@ -95,7 +95,7 @@ export class AuthComponent implements OnInit {
           summary: 'Connexion réussie',
           detail: `Bienvenue ${response.user.fullName} !`
         });
-        this.router.navigate(['/home']);
+        this.redirectByRole(response.user.role);
       },
       error: (error) => {
         this.messageService.add({
@@ -210,5 +210,14 @@ export class AuthComponent implements OnInit {
 
   toggleConfirmPasswordVisibility() {
     this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  private redirectByRole(role: string | undefined): void {
+    if (role === 'admin') {
+      void this.router.navigate(['/admin']);
+      return;
+    }
+
+    void this.router.navigate(['/home']);
   }
 }

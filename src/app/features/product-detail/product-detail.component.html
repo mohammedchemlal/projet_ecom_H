@@ -18,13 +18,13 @@
                   [class.active]="selectedImageIndex === i"
                   (click)="selectedImageIndex = i"
                 >
-                  <img [src]="image" [alt]="product.name + ' - ' + i" />
+                  <img [src]="image" [alt]="product.name + ' - ' + i" loading="lazy" decoding="async" />
                 </div>
               }
             </div>
             <div class="gallery-main">
               <div class="main-image" (click)="openZoomModal(selectedImageIndex)">
-                <img [src]="product.images[selectedImageIndex]" [alt]="product.name" />
+                <img [src]="product.images[selectedImageIndex]" [alt]="product.name" loading="eager" fetchpriority="high" decoding="async" />
                 <div class="zoom-icon">
                   <i class="pi pi-search-plus"></i>
                 </div>
@@ -37,7 +37,7 @@
                     [class.active]="selectedImageIndex === i"
                     (click)="selectedImageIndex = i"
                   >
-                    <img [src]="image" [alt]="product.name + ' - ' + i" />
+                    <img [src]="image" [alt]="product.name + ' - ' + i" loading="lazy" decoding="async" />
                   </div>
                 }
               </div>
@@ -181,23 +181,18 @@
               <div class="tab-pane">
                 <div class="description-content">
                   <h3>Détails du produit</h3>
-                  <p>{{ product.description }}</p>
-                  <h3>Caractéristiques</h3>
-                  <ul class="features-list">
-                    <li><i class="pi pi-check-circle"></i> Matière: Argent sterling 925</li>
-                    <li><i class="pi pi-check-circle"></i> Placage: Or 18 carats</li>
-                    <li><i class="pi pi-check-circle"></i> Poids: 5g</li>
-                    <li>
-                      <i class="pi pi-check-circle"></i> Longueur: 45cm + chaîne d'extension 5cm
-                    </li>
-                    <li><i class="pi pi-check-circle"></i> Livré dans un écrin cadeau</li>
-                    <li><i class="pi pi-check-circle"></i> Certificat d'authenticité inclus</li>
-                  </ul>
-                  <h3>Entretien</h3>
-                  <p>
-                    Pour préserver l'éclat de votre bijou, évitez tout contact avec l'eau, les
-                    produits chimiques et les parfums. Nettoyez délicatement avec un chiffon doux.
-                  </p>
+                  @for (paragraph of getDetailedDescriptionParagraphs(); track paragraph) {
+                    <p>{{ paragraph }}</p>
+                  }
+
+                  @for (section of getSpecificationSections(); track section.title) {
+                    <h3>{{ section.title }}</h3>
+                    <ul class="features-list">
+                      @for (item of section.items; track item) {
+                        <li><i class="pi pi-check-circle"></i> {{ item }}</li>
+                      }
+                    </ul>
+                  }
                 </div>
               </div>
             }
@@ -244,14 +239,12 @@
                   </button>
                 </div>
                 <div class="reviews-list">
-                  @for (review of reviews; track review) {
+                  @for (review of reviews; track review.id) {
                     <div class="review-card">
                       <div class="review-header">
-                        <img
-                          [src]="review.userAvatar"
-                          [alt]="review.userName"
-                          class="reviewer-avatar"
-                        />
+                        <div class="reviewer-avatar reviewer-avatar-placeholder">
+                          <i class="pi pi-user"></i>
+                        </div>
                         <div class="reviewer-info">
                           <div class="reviewer-name">
                             {{ review.userName }}
@@ -269,21 +262,10 @@
                           }
                         </div>
                       </div>
-                      <h4 class="review-title">{{ review.title }}</h4>
-                      <p class="review-comment">{{ review.comment }}</p>
-                      @if (review.images?.length) {
-                        <div class="review-images">
-                          @for (img of review.images; track img) {
-                            <img [src]="img" alt="Review image" />
-                          }
-                        </div>
+                      @if (review.title) {
+                        <h4 class="review-title">{{ review.title }}</h4>
                       }
-                      <div class="review-footer">
-                        <button class="like-btn">
-                          <i class="pi pi-heart"></i>
-                          Utile ({{ review.likes }})
-                        </button>
-                      </div>
+                      <p class="review-comment">{{ review.comment }}</p>
                     </div>
                   }
                 </div>
@@ -299,7 +281,7 @@
               @for (related of relatedProducts; track related) {
                 <div class="related-product-card" [routerLink]="['/product', related.id]">
                   <div class="product-image">
-                    <img [src]="related.images[0]" [alt]="related.name" />
+                    <img [src]="related.images[0]" [alt]="related.name" loading="lazy" decoding="async" />
                   </div>
                   <div class="product-info">
                     <h3>{{ related.name }}</h3>

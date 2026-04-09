@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -20,7 +21,7 @@ import { map } from 'rxjs';
 import { CategoryService } from '../../core/services/category.service';
 import { ProductService } from '../../core/services/product.service';
 import { ConfirmationService } from 'primeng/api';
-import type { Product } from '../../shared/models/product.model';
+import type { Product, ProductSpecificationSection } from '../../shared/models/product.model';
 import type { CategoryOption } from '../../core/services/category.service';
 
 @Component({
@@ -47,6 +48,7 @@ import type { CategoryOption } from '../../core/services/category.service';
 export class AdminProductsComponent {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -55,14 +57,20 @@ export class AdminProductsComponent {
   readonly products = toSignal(this.productService.getProducts(), { initialValue: [] as Product[] });
   readonly categories = toSignal(this.categoryService.getCategories(), { initialValue: [] as CategoryOption[] });
   readonly dialogVisible = signal(false);
+  readonly quickEditorVisible = signal(false);
   readonly selectedProduct = signal<Product | null>(null);
+  readonly quickEditorProduct = signal<Product | null>(null);
   readonly uploadedImages = signal<string[]>([]);
+  readonly specificationSections = signal<ProductSpecificationSection[]>([]);
+  readonly quickSpecificationSections = signal<ProductSpecificationSection[]>([]);
+  readonly quickDetailedDescription = signal('');
   readonly searchQuery = signal('');
   readonly selectedCategory = signal('');
 
   readonly productForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
     description: ['', [Validators.required, Validators.minLength(10)]],
+    detailedDescription: [''],
     price: [0, [Validators.required, Validators.min(0)]],
     discountPrice: this.fb.control<number | null>(null),
     category: ['', Validators.required],
@@ -99,6 +107,10 @@ export class AdminProductsComponent {
 
   private readonly placeholderImage =
     'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1200&q=80';
+  private readonly maxImageCount = 4;
+  private readonly maxSourceFileSize = 5 * 1024 * 1024;
+  private readonly maxImageWidth = 1280;
+  private readonly imageQuality = 0.82;
 
   readonly categoryOptions = computed(() => this.categories());
 
@@ -108,6 +120,7 @@ export class AdminProductsComponent {
     this.productForm.reset({
       name: '',
       description: '',
+      detailedDescription: '',
       price: 0,
       discountPrice: null,
       category: '',
@@ -116,6 +129,7 @@ export class AdminProductsComponent {
       isPromotion: false,
       promotionPercentage: null
     });
+    this.specificationSections.set([]);
     this.dialogVisible.set(true);
   }
 
@@ -125,6 +139,7 @@ export class AdminProductsComponent {
     this.productForm.patchValue({
       name: product.name,
       description: product.description ?? '',
+      detailedDescription: product.detailedDescription ?? product.description ?? '',
       price: product.price,
       discountPrice: product.discountPrice ?? null,
       category: product.category,
@@ -133,6 +148,7 @@ export class AdminProductsComponent {
       isPromotion: Boolean(product.isPromotion),
       promotionPercentage: product.promotionPercentage ?? null
     });
+    this.specificationSections.set(this.normalizeSpecificationSections(product.specifications));
     this.dialogVisible.set(true);
   }
 
@@ -147,6 +163,8 @@ export class AdminProductsComponent {
     const payload = {
       name: rawValue.name?.trim() ?? '',
       description: rawValue.description?.trim() ?? '',
+      detailedDescription: rawValue.detailedDescription?.trim() ?? rawValue.description?.trim() ?? '',
+      specifications: this.normalizeSpecificationSections(this.specificationSections()),
       price: rawValue.price ?? 0,
       discountPrice: rawValue.isPromotion ? rawValue.discountPrice ?? undefined : undefined,
       category: rawValue.category ?? '',
@@ -161,16 +179,26 @@ export class AdminProductsComponent {
     };
 
     if (this.selectedProduct()) {
-      this.productService.updateProduct(this.selectedProduct()!.id, payload).subscribe(() => {
-        this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit modifié.' });
+      this.productService.updateProduct(this.selectedProduct()!.id, payload).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit modifié.' });
+          this.dialogVisible.set(false);
+        },
+        error: (error: Error) => {
+          this.handleRequestError(error);
+        }
       });
     } else {
-      this.productService.createProduct(payload).subscribe(() => {
-        this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit créé.' });
+      this.productService.createProduct(payload).subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit créé.' });
+          this.dialogVisible.set(false);
+        },
+        error: (error: Error) => {
+          this.handleRequestError(error);
+        }
       });
     }
-
-    this.dialogVisible.set(false);
   }
 
   deleteProduct(product: Product): void {
@@ -181,21 +209,43 @@ export class AdminProductsComponent {
       acceptLabel: 'Supprimer',
       rejectLabel: 'Annuler',
       accept: () => {
-        this.productService.deleteProduct(product.id).subscribe(() => {
-          this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit supprimé.' });
+        this.productService.deleteProduct(product.id).subscribe({
+          next: () => {
+            this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit supprimé.' });
+          },
+          error: (error: Error) => {
+            this.handleRequestError(error);
+          }
         });
       }
     });
   }
 
   toggleProductStatus(product: Product): void {
-    this.productService.toggleProductStatus(product.id).subscribe(() => {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Succès',
-        detail: `Produit ${product.isActive ? 'activé' : 'désactivé'}`
-      });
+    this.productService.toggleProductStatus(product.id).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Succès',
+          detail: `Produit ${product.isActive ? 'activé' : 'désactivé'}`
+        });
+      },
+      error: (error: Error) => {
+        this.handleRequestError(error);
+      }
     });
+  }
+
+  private handleRequestError(error: Error): void {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Erreur',
+      detail: error.message || 'Une erreur est survenue.'
+    });
+
+    if (error.message.includes('Session expiree')) {
+      void this.router.navigate(['/auth/login']);
+    }
   }
 
   togglePromotion(product: Product): void {
@@ -204,6 +254,7 @@ export class AdminProductsComponent {
     this.productForm.patchValue({
       name: product.name,
       description: product.description ?? '',
+      detailedDescription: product.detailedDescription ?? product.description ?? '',
       price: product.price,
       discountPrice: product.discountPrice ?? Math.round(product.price * 0.85),
       category: product.category,
@@ -212,7 +263,180 @@ export class AdminProductsComponent {
       isPromotion: true,
       promotionPercentage: product.promotionPercentage ?? 15
     });
+    this.specificationSections.set(this.normalizeSpecificationSections(product.specifications));
     this.dialogVisible.set(true);
+  }
+
+  openQuickEditor(product: Product): void {
+    this.quickEditorProduct.set(product);
+    this.quickDetailedDescription.set(product.detailedDescription ?? product.description ?? '');
+    this.quickSpecificationSections.set(this.normalizeSpecificationSections(product.specifications));
+    this.quickEditorVisible.set(true);
+  }
+
+  saveQuickEditor(): void {
+    const product = this.quickEditorProduct();
+
+    if (!product) {
+      return;
+    }
+
+    this.productService
+      .updateProduct(product.id, {
+        detailedDescription: this.quickDetailedDescription().trim(),
+        specifications: this.normalizeSpecificationSections(this.quickSpecificationSections())
+      })
+      .subscribe({
+        next: () => {
+          this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Contenu détaillé mis à jour.' });
+          this.quickEditorVisible.set(false);
+          this.quickEditorProduct.set(null);
+        },
+        error: (error: Error) => {
+          this.handleRequestError(error);
+        }
+      });
+  }
+
+  addQuickSpecificationSection(): void {
+    this.quickSpecificationSections.update((sections) => [
+      ...sections,
+      {
+        title: '',
+        items: ['']
+      }
+    ]);
+  }
+
+  removeQuickSpecificationSection(sectionIndex: number): void {
+    this.quickSpecificationSections.update((sections) => sections.filter((_, index) => index !== sectionIndex));
+  }
+
+  updateQuickSpecificationSectionTitle(sectionIndex: number, title: string): void {
+    this.quickSpecificationSections.update((sections) =>
+      sections.map((section, index) => (index === sectionIndex ? { ...section, title } : section))
+    );
+  }
+
+  addQuickSpecificationItem(sectionIndex: number): void {
+    this.quickSpecificationSections.update((sections) =>
+      sections.map((section, index) =>
+        index === sectionIndex
+          ? {
+              ...section,
+              items: [...section.items, '']
+            }
+          : section
+      )
+    );
+  }
+
+  updateQuickSpecificationItem(sectionIndex: number, itemIndex: number, value: string): void {
+    this.quickSpecificationSections.update((sections) =>
+      sections.map((section, sIndex) =>
+        sIndex === sectionIndex
+          ? {
+              ...section,
+              items: section.items.map((item, iIndex) => (iIndex === itemIndex ? value : item))
+            }
+          : section
+      )
+    );
+  }
+
+  removeQuickSpecificationItem(sectionIndex: number, itemIndex: number): void {
+    this.quickSpecificationSections.update((sections) =>
+      sections.map((section, sIndex) => {
+        if (sIndex !== sectionIndex) {
+          return section;
+        }
+
+        const nextItems = section.items.filter((_, iIndex) => iIndex !== itemIndex);
+
+        return {
+          ...section,
+          items: nextItems.length > 0 ? nextItems : ['']
+        };
+      })
+    );
+  }
+
+  addSpecificationSection(): void {
+    this.specificationSections.update((sections) => [
+      ...sections,
+      {
+        title: '',
+        items: ['']
+      }
+    ]);
+  }
+
+  removeSpecificationSection(sectionIndex: number): void {
+    this.specificationSections.update((sections) => sections.filter((_, index) => index !== sectionIndex));
+  }
+
+  updateSpecificationSectionTitle(sectionIndex: number, title: string): void {
+    this.specificationSections.update((sections) =>
+      sections.map((section, index) => (index === sectionIndex ? { ...section, title } : section))
+    );
+  }
+
+  addSpecificationItem(sectionIndex: number): void {
+    this.specificationSections.update((sections) =>
+      sections.map((section, index) =>
+        index === sectionIndex
+          ? {
+              ...section,
+              items: [...section.items, '']
+            }
+          : section
+      )
+    );
+  }
+
+  updateSpecificationItem(sectionIndex: number, itemIndex: number, value: string): void {
+    this.specificationSections.update((sections) =>
+      sections.map((section, sIndex) =>
+        sIndex === sectionIndex
+          ? {
+              ...section,
+              items: section.items.map((item, iIndex) => (iIndex === itemIndex ? value : item))
+            }
+          : section
+      )
+    );
+  }
+
+  removeSpecificationItem(sectionIndex: number, itemIndex: number): void {
+    this.specificationSections.update((sections) =>
+      sections.map((section, sIndex) => {
+        if (sIndex !== sectionIndex) {
+          return section;
+        }
+
+        const nextItems = section.items.filter((_, iIndex) => iIndex !== itemIndex);
+
+        return {
+          ...section,
+          items: nextItems.length > 0 ? nextItems : ['']
+        };
+      })
+    );
+  }
+
+  private normalizeSpecificationSections(
+    sections: ProductSpecificationSection[] | null | undefined
+  ): ProductSpecificationSection[] {
+    if (!Array.isArray(sections)) {
+      return [];
+    }
+
+    return sections
+      .map((section) => ({
+        title: section.title?.trim() ?? '',
+        items: Array.isArray(section.items) ? section.items.map((item) => item.trim()).filter((item) => item.length > 0) : []
+      }))
+      .filter((section) => section.title.length > 0 && section.items.length > 0);
   }
 
   onSearchInput(event: Event): void {
@@ -230,20 +454,94 @@ export class AdminProductsComponent {
     this.selectedCategory.set('');
   }
 
-  onImageUpload(event: { files: File[] }): void {
-    for (const file of event.files) {
+  async onImageUpload(event: { files: File[] }): Promise<void> {
+    const currentImagesCount = this.uploadedImages().length;
+    const remainingSlots = this.maxImageCount - currentImagesCount;
+
+    if (remainingSlots <= 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Limite atteinte',
+        detail: `Maximum ${this.maxImageCount} images par produit.`
+      });
+
+      return;
+    }
+
+    const selectedFiles = event.files.slice(0, remainingSlots);
+
+    if (event.files.length > selectedFiles.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Images en exces',
+        detail: `Seules ${remainingSlots} image(s) ont ete prises en compte.`
+      });
+    }
+
+    const validFiles = selectedFiles.filter((file) => file.size <= this.maxSourceFileSize);
+
+    if (validFiles.length < selectedFiles.length) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Fichier trop lourd',
+        detail: 'Chaque image doit faire moins de 5 MB.'
+      });
+    }
+
+    const compressedImages = await Promise.all(validFiles.map((file) => this.compressImage(file)));
+
+    this.uploadedImages.update((images) => [...images, ...compressedImages.filter((image): image is string => Boolean(image))]);
+
+    if (compressedImages.some((image) => image === null)) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Image ignoree',
+        detail: 'Une ou plusieurs images n\'ont pas pu etre traitees.'
+      });
+    }
+  }
+
+  private compressImage(file: File): Promise<string | null> {
+    return new Promise((resolve) => {
       const reader = new FileReader();
 
       reader.onload = () => {
-        const result = reader.result;
+        const source = reader.result;
 
-        if (typeof result === 'string') {
-          this.uploadedImages.update((images) => [...images, result]);
+        if (typeof source !== 'string') {
+          resolve(null);
+          return;
         }
+
+        const image = new Image();
+
+        image.onload = () => {
+          const ratio = image.width > this.maxImageWidth ? this.maxImageWidth / image.width : 1;
+          const width = Math.max(1, Math.round(image.width * ratio));
+          const height = Math.max(1, Math.round(image.height * ratio));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const context = canvas.getContext('2d');
+
+          if (!context) {
+            resolve(source);
+            return;
+          }
+
+          context.drawImage(image, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', this.imageQuality));
+        };
+
+        image.onerror = () => resolve(null);
+        image.src = source;
       };
 
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
-    }
+    });
   }
 
   removeImage(index: number): void {

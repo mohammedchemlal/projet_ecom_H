@@ -1,7 +1,8 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, OnInit, OnDestroy, inject } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -60,14 +61,12 @@ export class UserProfileComponent implements OnInit, OnDestroy {
   // Avatar
   selectedAvatar: string | null = null;
   avatars = [
-    'https://randomuser.me/api/portraits/women/1.jpg',
-    'https://randomuser.me/api/portraits/women/2.jpg',
-    'https://randomuser.me/api/portraits/women/3.jpg',
-    'https://randomuser.me/api/portraits/women/4.jpg',
-    'https://randomuser.me/api/portraits/women/5.jpg',
-    'https://randomuser.me/api/portraits/men/1.jpg',
-    'https://randomuser.me/api/portraits/men/2.jpg',
-    'https://randomuser.me/api/portraits/men/3.jpg'
+    '/avatars/avatar-rose.svg',
+    '/avatars/avatar-navy.svg',
+    '/avatars/avatar-gold.svg',
+    '/avatars/avatar-emerald.svg',
+    '/avatars/avatar-terracotta.svg',
+    '/avatars/avatar-ink.svg'
   ];
   showAvatarModal = false;
 
@@ -80,6 +79,13 @@ export class UserProfileComponent implements OnInit, OnDestroy {
   showDeleteModal = false;
   deleteConfirmText = '';
 
+  // Order details
+  showOrderDetailsModal = false;
+  selectedOrder: Order | null = null;
+
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+
   constructor(
     private fb: FormBuilder,
     public authService: AuthService,
@@ -91,6 +97,14 @@ export class UserProfileComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const tab = params.get('tab');
+
+      if (tab === 'orders' || tab === 'security' || tab === 'profile') {
+        this.activeTab = tab;
+      }
+    });
+
     this.loadUserData();
     this.loadOrders();
   }
@@ -145,7 +159,7 @@ export class UserProfileComponent implements OnInit, OnDestroy {
       
       // Load saved avatar
       const savedAvatar = localStorage.getItem('userAvatar');
-      this.selectedAvatar = savedAvatar || this.avatars[0];
+      this.selectedAvatar = savedAvatar && this.avatars.includes(savedAvatar) ? savedAvatar : this.avatars[0];
       
       // Calculate member since
       this.stats.memberSince = new Date(this.currentUser.createdAt).toLocaleDateString('fr-MA', {
@@ -252,17 +266,28 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     }
 
     this.isSaving = true;
-    
-    // Simulate password change
-    setTimeout(() => {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Mot de passe modifié',
-        detail: 'Votre mot de passe a été mis à jour'
-      });
-      this.passwordForm.reset();
-      this.isSaving = false;
-    }, 1000);
+
+    const { currentPassword, newPassword, confirmPassword } = this.passwordForm.getRawValue();
+
+    this.authService.changePassword(currentPassword, newPassword, confirmPassword).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Mot de passe modifié',
+          detail: 'Votre mot de passe a été mis à jour'
+        });
+        this.passwordForm.reset();
+        this.isSaving = false;
+      },
+      error: (error: Error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: error.message || 'Impossible de modifier le mot de passe'
+        });
+        this.isSaving = false;
+      }
+    });
   }
 
   changeAvatar(avatar: string) {
@@ -282,7 +307,74 @@ export class UserProfileComponent implements OnInit, OnDestroy {
   }
 
   viewOrderDetails(order: Order) {
-    this.router.navigate(['/order', order.id]);
+    this.selectedOrder = order;
+    this.showOrderDetailsModal = true;
+  }
+
+  closeOrderDetailsModal() {
+    this.showOrderDetailsModal = false;
+    this.selectedOrder = null;
+  }
+
+  getOrderItemLineTotal(order: Order, productId: number): number {
+    const item = order.items.find((entry) => entry.productId === productId);
+    if (!item) {
+      return 0;
+    }
+
+    const unitPrice = item.product.discountPrice || item.product.price;
+    return unitPrice * item.quantity;
+  }
+
+  getOrderItemsSubtotal(order: Order): number {
+    return order.items.reduce((sum, item) => {
+      const unitPrice = item.product.discountPrice || item.product.price;
+      return sum + unitPrice * item.quantity;
+    }, 0);
+  }
+
+  getOrderDiscount(order: Order): number {
+    const subtotal = this.getOrderItemsSubtotal(order);
+    return subtotal > order.total ? subtotal - order.total : 0;
+  }
+
+  getOrderShipping(order: Order): number {
+    return 0;
+  }
+
+  deleteAccount() {
+    if (this.deleteConfirmText !== 'SUPPRIMER') {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Confirmation incorrecte',
+        detail: 'Veuillez taper SUPPRIMER pour confirmer'
+      });
+      return;
+    }
+
+    this.isSaving = true;
+
+    this.authService.deleteMyAccount().subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Compte supprimé',
+          detail: 'Votre compte a été supprimé'
+        });
+        this.showDeleteModal = false;
+        this.deleteConfirmText = '';
+        this.isSaving = false;
+        this.router.navigate(['/home']);
+      },
+      error: (error: Error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: error.message || 'Impossible de supprimer le compte'
+        });
+        this.isSaving = false;
+      }
+    });
   }
 
   getFilteredOrders(): Order[] {
@@ -308,26 +400,6 @@ export class UserProfileComponent implements OnInit, OnDestroy {
       delivered: 'success'
     };
     return severityMap[status] || 'secondary';
-  }
-
-  deleteAccount() {
-    if (this.deleteConfirmText !== 'SUPPRIMER') {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Confirmation incorrecte',
-        detail: 'Veuillez taper SUPPRIMER pour confirmer'
-      });
-      return;
-    }
-    
-    // Simulate account deletion
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Compte supprimé',
-      detail: 'Votre compte a été supprimé'
-    });
-    this.authService.logout();
-    this.router.navigate(['/home']);
   }
 
   formatDate(date: Date): string {

@@ -1,0 +1,107 @@
+<section class="admin-testimonials">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Preuve sociale</p>
+      <h1>Gestion des témoignages</h1>
+      <p class="subtitle">Publiez, modifiez et ordonnez les avis clients affichés sur la page d'accueil.</p>
+    </div>
+
+    <button pButton type="button" label="Nouveau témoignage" icon="pi pi-plus" (click)="openNew()"></button>
+  </header>
+
+  <p-table [value]="testimonials()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Client</th>
+        <th>Rôle</th>
+        <th>Note</th>
+        <th>Ordre</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-testimonial>
+      <tr>
+        <td>
+          <div class="testimonial-client">
+            <img [src]="getAvatar(testimonial)" [alt]="testimonial.customerName" />
+            <div>
+              <strong>{{ testimonial.customerName }}</strong>
+              <small>{{ testimonial.comment }}</small>
+            </div>
+          </div>
+        </td>
+        <td>{{ testimonial.role || '-' }}</td>
+        <td>
+          <p-rating [ngModel]="testimonial.rating" [readonly]="true"></p-rating>
+        </td>
+        <td>{{ testimonial.date ? (testimonial.date | date : 'dd/MM/yyyy' : undefined : 'fr-MA') : '-' }}</td>
+        <td>
+          <p-tag [value]="testimonial.isActive === false ? 'Inactif' : 'Actif'" [severity]="testimonial.isActive === false ? 'danger' : 'success'"></p-tag>
+        </td>
+        <td>
+          <div class="actions-cell">
+            <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editTestimonial(testimonial)" aria-label="Modifier"></button>
+            <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="deleteTestimonial(testimonial)" aria-label="Supprimer"></button>
+            <p-toggleswitch [ngModel]="testimonial.isActive !== false" (onChange)="toggleActive(testimonial, $event.checked)"></p-toggleswitch>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-dialog
+    [visible]="dialogVisible()"
+    (visibleChange)="dialogVisible.set($event)"
+    [header]="isEditing() ? 'Modifier le témoignage' : 'Nouveau témoignage'"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(700px, 96vw)' }"
+  >
+    <form class="testimonial-form" [formGroup]="testimonialForm" (ngSubmit)="saveTestimonial()">
+      <div class="form-grid">
+        <div class="field">
+          <label for="testimonial-name">Nom du client *</label>
+          <input id="testimonial-name" pInputText type="text" formControlName="customerName" />
+        </div>
+
+        <div class="field">
+          <label for="testimonial-role">Rôle</label>
+          <input id="testimonial-role" pInputText type="text" formControlName="role" placeholder="Ex: Cliente fidèle" />
+        </div>
+
+        <div class="field full-width">
+          <label for="testimonial-image">Image avatar</label>
+          <input id="testimonial-image" pInputText type="text" formControlName="customerImage" placeholder="/avatars/avatar-rose.svg" />
+        </div>
+
+        <div class="field">
+          <label for="testimonial-rating">Note *</label>
+          <p-rating inputId="testimonial-rating" formControlName="rating"></p-rating>
+        </div>
+
+        <div class="field">
+          <label for="testimonial-order">Ordre d'affichage</label>
+          <p-inputNumber inputId="testimonial-order" formControlName="sortOrder" [min]="0"></p-inputNumber>
+        </div>
+
+        <div class="field full-width">
+          <label for="testimonial-comment">Commentaire *</label>
+          <textarea id="testimonial-comment" pInputTextarea rows="5" formControlName="comment"></textarea>
+        </div>
+
+        <div class="field switch-field full-width">
+          <label>Actif</label>
+          <p-toggleswitch formControlName="isActive"></p-toggleswitch>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button pButton type="button" label="Annuler" class="p-button-outlined" (click)="dialogVisible.set(false)"></button>
+        <button pButton type="submit" label="Enregistrer" icon="pi pi-check"></button>
+      </div>
+    </form>
+  </p-dialog>
+</section>

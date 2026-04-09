@@ -3,15 +3,30 @@
 }
 
 .checkout-page {
+  --checkout-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.84));
+  --checkout-line: rgba(var(--primary-rgb), 0.12);
+  --checkout-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+  --form-field-height: 46px;
+  --form-field-radius: 10px;
   display: grid;
   gap: 1.5rem;
+  background:
+    radial-gradient(circle at 100% -10%, rgba(var(--primary-rgb), 0.11), transparent 34%),
+    radial-gradient(circle at -5% 100%, rgba(var(--accent-rgb), 0.08), transparent 36%),
+    var(--bg-light);
+  padding: 0.5rem;
+  border-radius: 1.5rem;
 }
 
 .checkout-hero {
   padding: 2rem;
   border-radius: 1.75rem;
-  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+  background:
+    radial-gradient(circle at 85% 14%, rgba(255, 255, 255, 0.18), transparent 16%),
+    linear-gradient(125deg, var(--primary-dark) 0%, var(--primary-color) 68%, var(--primary-light) 100%);
   color: #fff;
+  box-shadow: 0 24px 44px rgba(66, 9, 18, 0.2);
+  animation: ui-fade-up 0.45s ease both;
 }
 
 .eyebrow {
@@ -38,10 +53,55 @@
   gap: 1.5rem;
 }
 
+:host ::ng-deep .form-card .p-card,
+:host ::ng-deep .summary-card .p-card {
+  border-radius: 1.5rem;
+}
+
+:host ::ng-deep .form-card .p-card-body {
+  padding: 1.25rem;
+}
+
+:host ::ng-deep .form-card .p-card-title {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+:host ::ng-deep .checkout-form .p-button {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+:host ::ng-deep .checkout-form .p-inputtext {
+  width: 100%;
+  min-height: var(--form-field-height);
+  border-radius: var(--form-field-radius);
+  border-color: var(--border-color);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+:host ::ng-deep .checkout-form .p-inputtext:focus {
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.12);
+  border-color: var(--primary-color);
+}
+
 .form-card,
 .summary-card {
   border-radius: 1.5rem;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--checkout-shadow);
+  border: 1px solid var(--checkout-line);
+  background: var(--checkout-glass);
+  animation: ui-fade-up 0.45s ease both;
+}
+
+.form-card {
+  animation-delay: 0.08s;
+}
+
+.summary-card {
+  animation-delay: 0.14s;
 }
 
 .checkout-form {
@@ -51,13 +111,18 @@
 
 label {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .payment-box {
   padding: 1rem;
   border-radius: 1rem;
-  background: var(--bg-light);
+  background: rgba(var(--primary-rgb), 0.06);
+  border: 1px solid rgba(var(--primary-rgb), 0.14);
 }
 
 .payment-box p {
@@ -74,15 +139,101 @@ label {
 .summary-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
   margin: 0.65rem 0;
+}
+
+.summary-item span {
+  color: var(--text-color);
+}
+
+.summary-item strong {
+  white-space: nowrap;
 }
 
 .total-row {
   font-size: 1.05rem;
 }
 
+.empty-checkout {
+  border-radius: 1.5rem;
+  background: var(--checkout-glass);
+  border: 1px solid var(--checkout-line);
+  padding: 2rem;
+  box-shadow: var(--checkout-shadow);
+  text-align: center;
+  animation: ui-fade-up 0.45s ease both;
+}
+
+.empty-checkout h2 {
+  margin: 0 0 0.5rem;
+}
+
+.empty-checkout p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.back-products {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, var(--primary-color), var(--primary-dark));
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.back-products:hover {
+  background: var(--primary-dark);
+}
+
 @media (max-width: 960px) {
   .checkout-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes ui-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.checkout-page {
+  a,
+  button,
+  input,
+  textarea {
+    &:focus-visible {
+      outline: 2px solid rgba(var(--primary-rgb), 0.55);
+      outline-offset: 2px;
+    }
+  }
+
+  .back-products {
+    &:active {
+      transform: translateY(1px) scale(0.99);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-page {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

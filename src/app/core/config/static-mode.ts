@@ -1,1 +1,1 @@
-export const STATIC_NAVIGATION_MODE = true;
+export const STATIC_NAVIGATION_MODE = false;

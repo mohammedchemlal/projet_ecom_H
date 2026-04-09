@@ -1,14 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 
-import { AuthService } from '../../core/services/auth.service';
-import { OrderService } from '../../core/services/order.service';
-import { ProductService } from '../../core/services/product.service';
+import { AdminDashboardService } from '../../core/services/admin-dashboard.service';
 import type { Order } from '../../shared/models/order.model';
 import type { Product } from '../../shared/models/product.model';
 
@@ -23,7 +21,7 @@ type DashboardStatKey = 'totalUsers' | 'totalOrders' | 'totalRevenue' | 'totalPr
   standalone: true,
   imports: [ChartModule, CommonModule, RouterLink, TableModule, TagModule],
   template: `
-    <div class="admin-dashboard">
+    <div class="admin-dashboard" [attr.aria-busy]="loading()">
       <section class="dashboard-hero">
         <div>
           <p class="eyebrow">Pilotage e-commerce</p>
@@ -33,8 +31,42 @@ type DashboardStatKey = 'totalUsers' | 'totalOrders' | 'totalRevenue' | 'totalPr
         <div class="hero-side">
           <p class="date-label">{{ now | date: 'EEEE d MMMM y' }}</p>
           <p-tag value="Temps réel" severity="success"></p-tag>
+          <div class="hero-kpis" aria-label="Indicateurs clés du dashboard">
+            <span>
+              <strong>{{ displayStats.totalUsers }}</strong>
+              <small>Clients</small>
+            </span>
+            <span>
+              <strong>{{ displayStats.totalOrders }}</strong>
+              <small>Commandes</small>
+            </span>
+            <span>
+              <strong>{{ formatCurrency(displayStats.totalRevenue) }}</strong>
+              <small>CA</small>
+            </span>
+          </div>
         </div>
       </section>
+
+      @if (loading()) {
+        <section class="dashboard-status loading">
+          <i class="pi pi-spin pi-spinner"></i>
+          <div>
+            <strong>Chargement du dashboard</strong>
+            <p>Récupération des statistiques backend en cours...</p>
+          </div>
+        </section>
+      }
+
+      @if (errorMessage()) {
+        <section class="dashboard-status error" role="status">
+          <i class="pi pi-exclamation-triangle"></i>
+          <div>
+            <strong>Chargement partiel</strong>
+            <p>{{ errorMessage() }}</p>
+          </div>
+        </section>
+      }
 
       <section class="stats-grid">
         <article class="stat-card users">
@@ -191,9 +223,8 @@ type DashboardStatKey = 'totalUsers' | 'totalOrders' | 'totalRevenue' | 'totalPr
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
-  private readonly productService = inject(ProductService);
-  private readonly orderService = inject(OrderService);
-  private readonly authService = inject(AuthService);
+  private readonly dashboardService = inject(AdminDashboardService);
+  private subscription: Subscription | null = null;
 
   private readonly currencyFormatter = new Intl.NumberFormat('fr-MA', {
     style: 'currency',
@@ -205,7 +236,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     totalUsers: 0,
     totalOrders: 0,
     totalRevenue: 0,
-    totalProducts: 0
+    totalProducts: 0,
+    pendingOrders: 0,
+    deliveredOrders: 0,
+    lowStockProducts: 0
   };
 
   readonly displayStats = {
@@ -215,17 +249,20 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     totalProducts: 0
   };
 
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
+
   private readonly statAnimationFrames: Partial<Record<DashboardStatKey, number>> = {};
 
   readonly now = new Date();
 
-  readonly monthLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-  readonly monthlyRevenueData = [12500, 15000, 18000, 22000, 28000, 32000, 35000, 38000, 42000, 45000, 48000, 52000];
-  readonly monthlyTargetData = [14000, 16000, 19000, 23000, 27000, 31000, 34000, 39000, 43000, 47000, 50000, 54000];
-  readonly monthlyOrdersData = [220, 260, 280, 340, 390, 420, 455, 490, 530, 560, 590, 630];
+  monthLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+  monthlyRevenueData = [12500, 15000, 18000, 22000, 28000, 32000, 35000, 38000, 42000, 45000, 48000, 52000];
+  monthlyTargetData = [14000, 16000, 19000, 23000, 27000, 31000, 34000, 39000, 43000, 47000, 50000, 54000];
+  monthlyOrdersData = [220, 260, 280, 340, 390, 420, 455, 490, 530, 560, 590, 630];
 
-  readonly categoryLabels = ['Colliers', 'Bagues', 'Bracelets', "Boucles d'oreilles"];
-  readonly categorySalesShare = [35, 28, 22, 15];
+  categoryLabels = ['Colliers', 'Bagues', 'Bracelets', "Boucles d'oreilles"];
+  categorySalesShare = [35, 28, 22, 15];
   readonly categoryTargetShare = [32, 30, 23, 15];
 
   allOrders: Order[] = [];
@@ -237,13 +274,16 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   categoryChartData: unknown;
   categoryChartOptions: unknown;
 
-  readonly products = toSignal(this.productService.getProducts(), { initialValue: [] as Product[] });
-
   ngOnInit(): void {
-    this.loadStats();
-    this.loadRecentOrders();
-    this.loadLowStockProducts();
     this.initCharts();
+    this.subscription = this.dashboardService.summary$.subscribe((summary) => {
+      if (summary) {
+        this.applySummaryData(summary);
+        this.loading.set(false);
+      }
+    });
+
+    this.loadDashboardSummary();
   }
 
   ngOnDestroy(): void {
@@ -256,26 +296,100 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         window.cancelAnimationFrame(frameId);
       }
     }
+
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      this.subscription = null;
+    }
   }
 
-  loadStats(): void {
-    this.productService.getProducts().subscribe((products) => {
-      this.stats.totalProducts = products.length;
-      this.animateStatValue('totalProducts', products.length, 850);
-    });
+  loadDashboardSummary(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
 
-    this.orderService.getAllOrders().subscribe((orders) => {
-      this.allOrders = orders;
-      this.stats.totalOrders = orders.length;
-      this.stats.totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
-      this.animateStatValue('totalOrders', this.stats.totalOrders, 900);
-      this.animateStatValue('totalRevenue', this.stats.totalRevenue, 1000);
-    });
+    this.loading.set(true);
+    this.errorMessage.set('');
 
-    this.authService.getAllUsers().subscribe((users) => {
-      this.stats.totalUsers = users.length;
-      this.animateStatValue('totalUsers', users.length, 800);
+    this.dashboardService.refresh().subscribe({
+      next: () => {
+        // result handled by summary$ subscription
+      },
+      error: (error: Error) => {
+        this.loading.set(false);
+        this.errorMessage.set(error.message || 'Impossible de charger le dashboard.');
+      }
     });
+  }
+
+  private applySummaryData(summary: {
+    stats: {
+      total_users: number;
+      total_orders: number;
+      total_revenue: number;
+      total_products: number;
+      pending_orders: number;
+      delivered_orders: number;
+      low_stock_products: number;
+    };
+    recent_orders: Array<{ id: number; user_id: number; user_name: string; total: number; status: 'pending' | 'confirmed' | 'delivered'; created_at: string | null }>;
+    monthly_sales: Array<{ label: string; orders: number; revenue: number }>;
+    category_distribution: Array<{ category: string; label: string; total: number }>;
+    low_stock_products_list: Array<{ id: number; name: string; stock: number; category: string; image: string | null; is_active: boolean }>;
+  }): void {
+    this.stats.totalUsers = summary.stats.total_users;
+    this.stats.totalOrders = summary.stats.total_orders;
+    this.stats.totalRevenue = summary.stats.total_revenue;
+    this.stats.totalProducts = summary.stats.total_products;
+    this.stats.pendingOrders = summary.stats.pending_orders;
+    this.stats.deliveredOrders = summary.stats.delivered_orders;
+    this.stats.lowStockProducts = summary.stats.low_stock_products;
+
+    this.animateStatValue('totalUsers', this.stats.totalUsers, 800);
+    this.animateStatValue('totalOrders', this.stats.totalOrders, 900);
+    this.animateStatValue('totalRevenue', this.stats.totalRevenue, 1000);
+    this.animateStatValue('totalProducts', this.stats.totalProducts, 850);
+
+    this.recentOrders = summary.recent_orders.map((order) => ({
+      id: order.id,
+      userId: order.user_id,
+      userName: order.user_name,
+      items: [],
+      total: order.total,
+      status: order.status,
+      address: '',
+      phone: '',
+      createdAt: order.created_at ? new Date(order.created_at) : new Date()
+    }));
+
+    this.lowStockProducts = summary.low_stock_products_list.map((product) => ({
+      id: product.id,
+      name: product.name,
+      description: '',
+      price: 0,
+      images: product.image ? [product.image] : [],
+      category: product.category,
+      rating: 0,
+      reviewCount: 0,
+      stock: product.stock,
+      isActive: product.is_active,
+      createdAt: new Date()
+    }));
+
+    if (summary.monthly_sales.length === 12) {
+      this.monthLabels = summary.monthly_sales.map((item) => item.label);
+      this.monthlyRevenueData = summary.monthly_sales.map((item) => item.revenue);
+      this.monthlyOrdersData = summary.monthly_sales.map((item) => item.orders);
+    }
+
+    if (summary.category_distribution.length > 0) {
+      this.categoryLabels = summary.category_distribution.map((item) => item.label);
+      const totalCategories = summary.category_distribution.reduce((sum, item) => sum + item.total, 0);
+      this.categorySalesShare = summary.category_distribution.map((item) =>
+        totalCategories > 0 ? Math.round((item.total / totalCategories) * 100) : 0
+      );
+    }
+
+    this.initCharts();
   }
 
   private animateStatValue(stat: DashboardStatKey, target: number, durationMs = 900): void {
@@ -304,25 +418,6 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     };
 
     this.statAnimationFrames[stat] = window.requestAnimationFrame(step);
-  }
-
-  loadRecentOrders(): void {
-    this.orderService.getRecentOrders(5).subscribe((orders) => {
-      this.authService.getAllUsers().subscribe((users) => {
-        const userMap = new Map(users.map((user) => [user.id, user.fullName] as const));
-
-        this.recentOrders = orders.map((order) => ({
-          ...order,
-          userName: userMap.get(order.userId) || `Client #${order.userId}`
-        }));
-      });
-    });
-  }
-
-  loadLowStockProducts(): void {
-    this.productService.getLowStockProducts(10).subscribe((products) => {
-      this.lowStockProducts = products;
-    });
   }
 
   initCharts(): void {
@@ -550,16 +645,15 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   get pendingOrdersCount(): number {
-    return this.allOrders.filter((order) => order.status === 'pending').length;
+    return this.stats.pendingOrders;
   }
 
   get deliveredOrderRate(): number {
-    if (!this.allOrders.length) {
+    if (!this.stats.totalOrders) {
       return 0;
     }
 
-    const delivered = this.allOrders.filter((order) => order.status === 'delivered').length;
-    return Math.round((delivered / this.allOrders.length) * 100);
+    return Math.round((this.stats.deliveredOrders / this.stats.totalOrders) * 100);
   }
 
   get lowStockRate(): number {

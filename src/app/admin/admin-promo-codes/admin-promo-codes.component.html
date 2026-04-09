@@ -71,11 +71,13 @@
         <div class="field">
           <label for="promo-type">Type *</label>
           <p-select
+            class="dialog-select"
             inputId="promo-type"
             formControlName="type"
             [options]="promoTypeOptions"
             optionLabel="label"
             optionValue="value"
+            [appendTo]="'body'"
           ></p-select>
         </div>
 

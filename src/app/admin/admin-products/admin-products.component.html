@@ -97,6 +97,7 @@
         <td>
           <div class="actions-cell">
             <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="openEdit(product)" aria-label="Modifier"></button>
+            <button pButton type="button" icon="pi pi-list" class="p-button-text" (click)="openQuickEditor(product)" aria-label="Edition rapide details"></button>
             <button pButton type="button" icon="pi pi-tags" class="p-button-text" (click)="togglePromotion(product)" aria-label="Promotion"></button>
             <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-danger" (click)="deleteProduct(product)" aria-label="Supprimer"></button>
             <p-toggleswitch [(ngModel)]="product.isActive" (onChange)="toggleProductStatus(product)"></p-toggleswitch>
@@ -133,6 +134,17 @@
           }
         </div>
 
+        <div class="field full-width">
+          <label for="product-detailed-description">Description détaillée</label>
+          <textarea
+            id="product-detailed-description"
+            pInputTextarea
+            rows="5"
+            formControlName="detailedDescription"
+            placeholder="Ajoutez une description longue structurée en paragraphes"
+          ></textarea>
+        </div>
+
         <div class="field">
           <label for="product-price">Prix (DH) *</label>
           <p-inputNumber inputId="product-price" formControlName="price" mode="currency" currency="MAD" locale="fr-MA"></p-inputNumber>
@@ -146,12 +158,14 @@
         <div class="field">
           <label for="product-category">Catégorie *</label>
           <p-select
+            class="dialog-select"
             inputId="product-category"
             formControlName="category"
             [options]="categoryOptions()"
             optionLabel="label"
             optionValue="value"
             placeholder="Sélectionner"
+            [appendTo]="'body'"
           ></p-select>
         </div>
 
@@ -185,6 +199,8 @@
             accept="image/*"
             [customUpload]="true"
             [auto]="true"
+            [maxFileSize]="5000000"
+            [fileLimit]="4"
             chooseLabel="Ajouter des images"
             (onSelect)="onImageUpload($event)"
           ></p-fileUpload>
@@ -198,6 +214,83 @@
             }
           </div>
         </div>
+
+        <div class="field full-width specifications-editor">
+          <div class="specifications-header">
+            <label>Caractéristiques structurées</label>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              label="Ajouter une section"
+              class="p-button-outlined p-button-sm"
+              (click)="addSpecificationSection()"
+            ></button>
+          </div>
+
+          @if (specificationSections().length === 0) {
+            <p class="specifications-empty">Aucune section ajoutée. Exemple: Caractéristiques, Entretien, Conseils.</p>
+          }
+
+          <div class="specifications-sections">
+            @for (section of specificationSections(); track $index; let sectionIndex = $index) {
+              <article class="specification-section">
+                <div class="section-title-row">
+                  <input
+                    pInputText
+                    type="text"
+                    [ngModel]="section.title"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="updateSpecificationSectionTitle(sectionIndex, $event)"
+                    placeholder="Titre de section"
+                    aria-label="Titre de section"
+                  />
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-danger"
+                    (click)="removeSpecificationSection(sectionIndex)"
+                    aria-label="Supprimer la section"
+                  ></button>
+                </div>
+
+                <div class="section-items">
+                  @for (item of section.items; track $index; let itemIndex = $index) {
+                    <div class="section-item-row">
+                      <input
+                        pInputText
+                        type="text"
+                        [ngModel]="item"
+                        [ngModelOptions]="{ standalone: true }"
+                        (ngModelChange)="updateSpecificationItem(sectionIndex, itemIndex, $event)"
+                        placeholder="Ex: Matière: Argent 925"
+                        aria-label="Élément de caractéristique"
+                      />
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-times"
+                        class="p-button-text"
+                        (click)="removeSpecificationItem(sectionIndex, itemIndex)"
+                        aria-label="Supprimer l'élément"
+                      ></button>
+                    </div>
+                  }
+                </div>
+
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-plus"
+                  label="Ajouter un élément"
+                  class="p-button-text p-button-sm"
+                  (click)="addSpecificationItem(sectionIndex)"
+                ></button>
+              </article>
+            }
+          </div>
+        </div>
       </div>
 
       <div class="dialog-actions">
@@ -205,5 +298,112 @@
         <button pButton type="submit" label="Enregistrer" icon="pi pi-check"></button>
       </div>
     </form>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="quickEditorVisible()"
+    (visibleChange)="quickEditorVisible.set($event)"
+    [header]="'Edition rapide - ' + (quickEditorProduct()?.name ?? '')"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(760px, 96vw)' }"
+  >
+    <div class="quick-editor">
+      <div class="field full-width">
+        <label for="quick-detailed-description">Description détaillée</label>
+        <textarea
+          id="quick-detailed-description"
+          pInputTextarea
+          rows="5"
+          [ngModel]="quickDetailedDescription()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="quickDetailedDescription.set($event)"
+          placeholder="Description longue du produit"
+        ></textarea>
+      </div>
+
+      <div class="field full-width specifications-editor">
+        <div class="specifications-header">
+          <label>Caractéristiques structurées</label>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            label="Ajouter une section"
+            class="p-button-outlined p-button-sm"
+            (click)="addQuickSpecificationSection()"
+          ></button>
+        </div>
+
+        @if (quickSpecificationSections().length === 0) {
+          <p class="specifications-empty">Aucune section ajoutée.</p>
+        }
+
+        <div class="specifications-sections">
+          @for (section of quickSpecificationSections(); track $index; let sectionIndex = $index) {
+            <article class="specification-section">
+              <div class="section-title-row">
+                <input
+                  pInputText
+                  type="text"
+                  [ngModel]="section.title"
+                  [ngModelOptions]="{ standalone: true }"
+                  (ngModelChange)="updateQuickSpecificationSectionTitle(sectionIndex, $event)"
+                  placeholder="Titre de section"
+                  aria-label="Titre de section"
+                />
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-danger"
+                  (click)="removeQuickSpecificationSection(sectionIndex)"
+                  aria-label="Supprimer la section"
+                ></button>
+              </div>
+
+              <div class="section-items">
+                @for (item of section.items; track $index; let itemIndex = $index) {
+                  <div class="section-item-row">
+                    <input
+                      pInputText
+                      type="text"
+                      [ngModel]="item"
+                      [ngModelOptions]="{ standalone: true }"
+                      (ngModelChange)="updateQuickSpecificationItem(sectionIndex, itemIndex, $event)"
+                      placeholder="Ex: Matière: Argent 925"
+                      aria-label="Élément de caractéristique"
+                    />
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-times"
+                      class="p-button-text"
+                      (click)="removeQuickSpecificationItem(sectionIndex, itemIndex)"
+                      aria-label="Supprimer l'élément"
+                    ></button>
+                  </div>
+                }
+              </div>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Ajouter un élément"
+                class="p-button-text p-button-sm"
+                (click)="addQuickSpecificationItem(sectionIndex)"
+              ></button>
+            </article>
+          }
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Annuler" class="p-button-outlined" (click)="quickEditorVisible.set(false)"></button>
+      <button pButton type="button" label="Enregistrer" icon="pi pi-check" (click)="saveQuickEditor()"></button>
+    </ng-template>
   </p-dialog>
 </section>

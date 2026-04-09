@@ -1,14 +1,80 @@
 <section class="admin-orders">
   <header class="page-header">
     <h2>Gestion des commandes</h2>
+    <button pButton type="button" label="Nouvelle commande" icon="pi pi-plus" (click)="openCreateOrderDialog()"></button>
   </header>
 
-  <p-table [value]="visibleOrders()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines">
+  <div class="orders-filters">
+    <span class="p-input-icon-left search-field">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        placeholder="Rechercher N°, client, telephone, adresse"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+      />
+    </span>
+
+    <p-select
+      [options]="statusFilterOptions"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusFilterChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Statut"
+    ></p-select>
+
+    <p-select
+      [options]="periodOptions"
+      [ngModel]="periodFilter()"
+      (ngModelChange)="onPeriodChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Période"
+    ></p-select>
+
+    <input
+      pInputText
+      type="date"
+      [ngModel]="dateFrom()"
+      (ngModelChange)="onDateFromChange($event)"
+      aria-label="Date de debut"
+    />
+
+    <input
+      pInputText
+      type="date"
+      [ngModel]="dateTo()"
+      (ngModelChange)="onDateToChange($event)"
+      aria-label="Date de fin"
+    />
+
+    <button pButton type="button" label="Effacer" severity="secondary" icon="pi pi-filter-slash" (click)="clearFilters()"></button>
+  </div>
+
+  <p-table
+    [value]="orders()"
+    [loading]="loading()"
+    responsiveLayout="scroll"
+    styleClass="p-datatable-gridlines"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="rows()"
+    [first]="(currentPage() - 1) * rows()"
+    [totalRecords]="totalRecords()"
+    [rowsPerPageOptions]="[5, 10, 20, 50]"
+    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} commandes"
+    [showCurrentPageReport]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+  >
     <ng-template pTemplate="header">
       <tr>
         <th>N° Commande</th>
         <th>Client</th>
         <th>Date</th>
+        <th>Code promo</th>
+        <th>Réduction</th>
         <th>Total</th>
         <th>Statut</th>
         <th>Actions</th>
@@ -16,10 +82,24 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-order>
-      <tr>
+      <tr [class.has-promo-row]="!!order.promoCode">
         <td>#{{ order.id }}</td>
         <td>{{ order.userName }}</td>
         <td>{{ formatDate(order.createdAt) }}</td>
+        <td>
+          @if (order.promoCode) {
+            <span class="promo-chip">{{ order.promoCode }}</span>
+          } @else {
+            <span class="empty-value">-</span>
+          }
+        </td>
+        <td>
+          @if (order.discountAmount && order.discountAmount > 0) {
+            <span class="discount-chip">-{{ formatCurrency(order.discountAmount) }}</span>
+          } @else {
+            <span class="empty-value">-</span>
+          }
+        </td>
         <td>{{ formatCurrency(order.total) }}</td>
         <td>
           <p-select
@@ -41,6 +121,15 @@
             aria-label="Voir les details"
             (click)="viewOrderDetails(order)"
           ></button>
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-text p-button-danger"
+            aria-label="Supprimer la commande"
+            (click)="deleteOrder(order)"
+          ></button>
         </td>
       </tr>
     </ng-template>
@@ -59,6 +148,12 @@
         <p><strong>N° commande:</strong> #{{ order.id }}</p>
         <p><strong>Client:</strong> {{ order.userName }}</p>
         <p><strong>Date:</strong> {{ formatDate(order.createdAt) }}</p>
+        @if (order.promoCode) {
+          <p><strong>Code promo:</strong> <span class="promo-chip">{{ order.promoCode }}</span></p>
+        }
+        @if (order.discountAmount && order.discountAmount > 0) {
+          <p><strong>Réduction:</strong> <span class="discount-chip">-{{ formatCurrency(order.discountAmount) }}</span></p>
+        }
         <p><strong>Adresse:</strong> {{ getFormattedAddress(order.address) }}</p>
         <p><strong>Telephone:</strong> {{ order.phone }}</p>
         <p>
@@ -93,5 +188,54 @@
         <strong>Total: {{ formatCurrency(order.total) }}</strong>
       </div>
     }
+  </p-dialog>
+
+  <p-dialog
+    [visible]="createOrderVisible()"
+    (visibleChange)="createOrderVisible.set($event)"
+    header="Nouvelle commande"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(620px, 96vw)' }"
+  >
+    <form class="create-order-form" [formGroup]="createOrderForm" (ngSubmit)="saveCreatedOrder()">
+      <label>
+        ID client
+        <p-inputNumber inputId="order-user-id" formControlName="userId" [min]="1"></p-inputNumber>
+      </label>
+
+      <label>
+        Total (MAD)
+        <p-inputNumber inputId="order-total" formControlName="total" [min]="0" mode="decimal"></p-inputNumber>
+      </label>
+
+      <label>
+        Statut
+        <p-select
+          class="create-order-status-select"
+          formControlName="status"
+          [options]="statuses"
+          optionLabel="label"
+          optionValue="value"
+          [appendTo]="'body'"
+        ></p-select>
+      </label>
+
+      <label>
+        Telephone
+        <input pInputText type="text" formControlName="phone" />
+      </label>
+
+      <label>
+        Adresse
+        <input pInputText type="text" formControlName="address" />
+      </label>
+
+      <div class="order-dialog-actions">
+        <button pButton type="button" label="Annuler" class="p-button-outlined" (click)="createOrderVisible.set(false)"></button>
+        <button pButton type="submit" label="Ajouter" icon="pi pi-check"></button>
+      </div>
+    </form>
   </p-dialog>
 </section>

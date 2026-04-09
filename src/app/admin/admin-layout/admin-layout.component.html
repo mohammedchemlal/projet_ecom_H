@@ -12,12 +12,7 @@
     <div class="sidebar-header">
       <a class="admin-brand" routerLink="/home" aria-label="Aller à l'accueil" (click)="onNavigationClick()">
         @if (!logoLoadFailed) {
-          <img
-            class="admin-logo-img"
-            [src]="siteLogoSrc"
-            alt="Valeria House of Jewels"
-            (error)="logoLoadFailed = true"
-          />
+        
         }
 
         <span class="admin-logo-text">
@@ -75,18 +70,55 @@
         <i class="pi" [class.pi-bars]="!sidebarVisible" [class.pi-times]="sidebarVisible"></i>
       </button>
       <div class="admin-title">Administration</div>
-      <div class="admin-user">
-        @if (!headerLogoLoadFailed) {
-          <img
-            class="admin-user-logo"
-            [src]="siteLogoSrc"
-            alt="Valeria"
-            (error)="headerLogoLoadFailed = true"
-          />
-        } @else {
-          <i class="pi pi-user" aria-hidden="true"></i>
+      <div class="admin-user-area">
+        <button
+          type="button"
+          class="profile-trigger"
+          [class.open]="profilePanelVisible()"
+          (click)="toggleProfilePanel()"
+          aria-label="Afficher le profil utilisateur"
+          [attr.aria-expanded]="profilePanelVisible()"
+        >
+          <span class="admin-user-avatar" aria-hidden="true">{{ currentUserInitials() }}</span>
+          <span>{{ currentUserLabel }}</span>
+          <i class="pi" [class.pi-chevron-down]="!profilePanelVisible()" [class.pi-chevron-up]="profilePanelVisible()"></i>
+        </button>
+
+        @if (profilePanelVisible()) {
+          <div class="profile-popover" role="dialog" aria-label="Profil utilisateur">
+            <div class="profile-top">
+              <div class="profile-avatar" aria-hidden="true">
+                {{ currentUserInitials() }}
+              </div>
+              <div>
+                <strong>{{ currentUser()?.fullName || 'Utilisateur' }}</strong>
+                <span>{{ currentUser()?.role === 'admin' ? 'Administrateur' : 'Visiteur' }}</span>
+              </div>
+            </div>
+
+            <div class="profile-meta">
+              <p>
+                <i class="pi pi-envelope"></i>
+                <span>{{ currentUser()?.email || '-' }}</span>
+              </p>
+              <p>
+                <i class="pi pi-phone"></i>
+                <span>{{ currentUser()?.phone || '-' }}</span>
+              </p>
+              <p>
+                <i class="pi pi-map-marker"></i>
+                <span>{{ currentUser()?.address || '-' }}</span>
+              </p>
+            </div>
+
+            <div class="profile-actions">
+            
+              <button type="button" class="profile-action danger" (click)="logout()">
+                Déconnexion
+              </button>
+            </div>
+          </div>
         }
-        <span>{{ currentUserLabel }}</span>
       </div>
     </div>
 

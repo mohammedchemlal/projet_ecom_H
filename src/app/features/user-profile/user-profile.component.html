@@ -230,6 +230,18 @@
                   <span>Total</span>
                   <strong>{{ order.total | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
                 </div>
+                @if (order.promoCode) {
+                  <div class="order-promo-code">
+                    <span>Code promo</span>
+                    <strong>{{ order.promoCode }}</strong>
+                  </div>
+                }
+                @if (getOrderDiscount(order) > 0) {
+                  <div class="order-discount">
+                    <span>Réduction appliquée</span>
+                    <strong>-{{ getOrderDiscount(order) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+                  </div>
+                }
                 <button class="view-order-btn" (click)="viewOrderDetails(order)">
                   Voir les détails
                   <i class="pi pi-arrow-right"></i>
@@ -345,12 +357,68 @@
 </div>
 
 <!-- Avatar Modal -->
-<p-dialog [(visible)]="showAvatarModal" header="Changer mon avatar" [modal]="true" [style]="{width: '500px'}" styleClass="avatar-modal">
+<p-dialog [(visible)]="showAvatarModal" header="Choisir un avatar" [modal]="true" [style]="{width: '560px', maxWidth: '95vw'}" styleClass="avatar-modal">
+  <p class="avatar-subtitle">Choisissez un style d'avatar professionnel pour votre compte.</p>
   <div class="avatar-grid">
-    <div *ngFor="let avatar of avatars" class="avatar-option" [class.selected]="selectedAvatar === avatar" (click)="changeAvatar(avatar)">
-      <img [src]="avatar" alt="Avatar">
+    <button
+      type="button"
+      *ngFor="let avatar of avatars; let index = index"
+      class="avatar-option"
+      [class.selected]="selectedAvatar === avatar"
+      (click)="changeAvatar(avatar)"
+    >
+      <img [src]="avatar" [alt]="'Avatar ' + (index + 1)">
+      <span class="avatar-check"><i class="pi pi-check"></i></span>
+    </button>
+  </div>
+</p-dialog>
+
+<!-- Order Details Modal -->
+<p-dialog
+  [(visible)]="showOrderDetailsModal"
+  header="Détails de la commande"
+  [modal]="true"
+  [style]="{ width: '720px', maxWidth: '95vw' }"
+  (onHide)="closeOrderDetailsModal()"
+>
+  <div *ngIf="selectedOrder as order" class="order-details-modal">
+    <div class="order-details-top">
+      <div>
+        <strong>Commande #{{ order.id }}</strong>
+        <p>{{ formatDate(order.createdAt) }}</p>
+      </div>
+      <p-tag [value]="getStatusLabel(order.status)" [severity]="getStatusSeverity(order.status)"></p-tag>
+    </div>
+
+    <div class="order-details-items">
+      <div class="order-details-item" *ngFor="let item of order.items">
+        <img [src]="item.product.images[0] || item.product.image" [alt]="item.product.name" />
+        <div class="details-content">
+          <h4>{{ item.product.name }}</h4>
+          <p>Quantité: {{ item.quantity }}</p>
+        </div>
+        <strong>{{ getOrderItemLineTotal(order, item.productId) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
+      </div>
+    </div>
+
+    <div class="order-details-summary">
+      <div><span>Sous-total</span><strong>{{ getOrderItemsSubtotal(order) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      @if (order.promoCode) {
+        <div><span>Code promo</span><strong>{{ order.promoCode }}</strong></div>
+      }
+      @if (getOrderDiscount(order) > 0) {
+        <div><span>Réduction</span><strong>-{{ getOrderDiscount(order) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      }
+      <div><span>Livraison</span><strong>{{ getOrderShipping(order) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      <div class="final-total"><span>Total</span><strong>{{ order.total | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      <div><span>Adresse</span><strong>{{ order.address.replace('|', ', ') }}</strong></div>
+      <div><span>Téléphone</span><strong>{{ order.phone }}</strong></div>
     </div>
   </div>
+
+  <ng-template pTemplate="footer">
+    <button class="btn-secondary" (click)="closeOrderDetailsModal()">Fermer</button>
+  </ng-template>
 </p-dialog>
 
 <!-- Delete Account Modal -->

@@ -5,6 +5,13 @@
     <p>Confirmez vos informations de livraison et validez votre commande.</p>
   </header>
 
+  @if (cartItems().length === 0) {
+    <section class="empty-checkout">
+      <h2>Votre panier est vide</h2>
+      <p>Ajoutez des produits avant de passer au paiement.</p>
+      <a routerLink="/products" class="back-products">Voir les produits</a>
+    </section>
+  } @else {
   <div class="checkout-layout">
     <p-card class="form-card">
       <ng-template pTemplate="title">Informations de livraison</ng-template>
@@ -43,8 +50,12 @@
 
       <p-divider></p-divider>
       <div class="summary-row"><span>Sous-total</span><strong>{{ subtotal() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
-      <div class="summary-row"><span>Livraison</span><strong>{{ shipping | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      @if (discount() > 0) {
+        <div class="summary-row"><span>Réduction</span><strong>-{{ discount() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
+      }
+      <div class="summary-row"><span>Livraison</span><strong>Gratuite</strong></div>
       <div class="summary-row total-row"><span>Total</span><strong>{{ total() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong></div>
     </aside>
   </div>
+  }
 </section>

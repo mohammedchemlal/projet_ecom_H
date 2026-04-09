@@ -5,6 +5,8 @@ export interface Order {
   userId: number;
   items: CartItem[];
   total: number;
+  discountAmount?: number;
+  promoCode?: string;
   status: 'pending' | 'confirmed' | 'delivered';
   address: string;
   phone: string;

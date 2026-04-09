@@ -4,11 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CarouselModule } from 'primeng/carousel';
 import { RatingModule } from 'primeng/rating';
+import { finalize } from 'rxjs';
 
+import { CategoryService, CategoryOption } from '../../core/services/category.service';
 import { CartService } from '../../core/services/cart.service';
+import { PromoCodeService } from '../../core/services/promo-code.service';
 import { ProductService } from '../../core/services/product.service';
+import { TestimonialService } from '../../core/services/testimonial.service';
 import { WishlistService } from '../../core/services/wishlist.service';
-import { Product } from '../../shared/models/product.model';
+import { Product, Testimonial } from '../../shared/models/product.model';
+
+interface HomeCategoryCard {
+  name: string;
+  image: string;
+  value: string;
+  count: number;
+}
 
 @Component({
   selector: 'app-home',
@@ -18,9 +29,18 @@ import { Product } from '../../shared/models/product.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit {
+  private cachedCategories: CategoryOption[] = [];
+  private activeProducts: Product[] = [];
+
   featuredProducts: Product[] = [];
   newArrivals: Product[] = [];
-  isLoading = true;
+  categories: HomeCategoryCard[] = [];
+  heroReady = false;
+  productsLoading = true;
+  testimonialsLoading = true;
+  promoBannerTitle = "Jusqu'a -30%";
+  promoBannerSubtitle = 'Sur une selection de bijoux';
+  promoBannerCta = "Profiter de l'offre";
 
   newsletterEmail = '';
   newsletterState: 'idle' | 'saving' | 'success' | 'error' = 'idle';
@@ -46,88 +66,142 @@ export class HomeComponent implements OnInit {
 
   heroSlides = [
     {
-      image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1600&q=80',
+      image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1280&q=72',
+      alt: 'Collier doré mis en valeur sur fond sombre',
+      priority: true,
       title: 'Collection Automne/Hiver 2026',
       subtitle: 'Découvrez notre nouvelle collection de bijoux raffinés',
       cta: 'Explorer'
     },
     {
-      image: 'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=1600&q=80',
+      image: 'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=1280&q=72',
+      alt: 'Bague élégante avec finition argentée',
+      priority: false,
       title: 'Élégance Intemporelle',
       subtitle: 'Des pièces uniques pour chaque occasion',
       cta: 'Découvrir'
     },
     {
-      image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=1600&q=80',
+      image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=1280&q=72',
+      alt: 'Bracelet raffiné présenté en studio',
+      priority: false,
       title: 'Offre Spéciale -30%',
       subtitle: 'Sur une sélection premium • Stock limité',
       cta: 'Profiter'
     }
   ];
 
-  categories = [
-    {
-      name: 'Colliers',
-      image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=900&q=80',
-      link: '/products?category=necklaces',
-      count: 45
-    },
-    {
-      name: 'Bagues',
-      image: 'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=900&q=80',
-      link: '/products?category=rings',
-      count: 32
-    },
-    {
-      name: 'Bracelets',
-      image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=900&q=80',
-      link: '/products?category=bracelets',
-      count: 28
-    }
-  ];
-
-  testimonials = [
-    {
-      name: 'Sophie Martin',
-      role: 'Cliente fidèle',
-      comment: 'Des bijoux d\'une qualité exceptionnelle. Le service client est remarquable et les livraisons sont rapides.',
-      rating: 5,
-      image: 'https://randomuser.me/api/portraits/women/1.jpg'
-    },
-    {
-      name: 'Julie Bernard',
-      role: 'Collectionneuse',
-      comment: 'J\'adore la finesse des créations. Chaque pièce est unique et parfaitement finie.',
-      rating: 5,
-      image: 'https://randomuser.me/api/portraits/women/2.jpg'
-    },
-    {
-      name: 'Marie Lambert',
-      role: 'Influenceuse mode',
-      comment: 'Mes clients adorent ces bijoux. Le rapport qualité-prix est imbattable.',
-      rating: 5,
-      image: 'https://randomuser.me/api/portraits/women/3.jpg'
-    }
-  ];
+  testimonials: Testimonial[] = [];
 
   constructor(
+    private readonly categoryService: CategoryService,
     private readonly productService: ProductService,
+    private readonly promoCodeService: PromoCodeService,
+    private readonly testimonialService: TestimonialService,
     private readonly cartService: CartService,
     private readonly wishlistService: WishlistService
   ) {}
 
   ngOnInit(): void {
     this.loadProducts();
+    this.loadCategoriesAndPromo();
+    this.loadTestimonials();
   }
 
   loadProducts(): void {
-    this.isLoading = true;
+    this.productsLoading = true;
 
-    this.productService.getFeaturedProducts().subscribe((products) => {
-      this.featuredProducts = products.slice(0, 4);
-      this.newArrivals = products.slice(4, 8);
-      this.isLoading = false;
+    this.productService
+      .getProducts()
+      .pipe(finalize(() => (this.productsLoading = false)))
+      .subscribe({
+      next: (products) => {
+        this.activeProducts = products.filter((product) => product.isActive);
+        const promotedProducts = this.activeProducts.filter((product) => product.isPromotion);
+
+        this.featuredProducts = (promotedProducts.length > 0 ? promotedProducts : this.activeProducts).slice(0, 4);
+
+        this.newArrivals = [...this.activeProducts]
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, 4);
+
+        this.rebuildCategoryCards();
+      },
+      error: () => {
+        this.featuredProducts = [];
+        this.newArrivals = [];
+      }
     });
+  }
+
+  loadCategoriesAndPromo(): void {
+    this.categoryService.getCategories().subscribe({
+      next: (categories) => {
+        this.cachedCategories = categories;
+        this.rebuildCategoryCards();
+      }
+    });
+
+    this.promoCodeService.getPromoCodes().subscribe({
+      next: (promoCodes) => {
+        const bestPromo = promoCodes
+          .filter((code) => code.isActive)
+          .sort((a, b) => b.discount - a.discount)[0];
+
+        if (bestPromo) {
+          this.promoBannerTitle = `Code ${bestPromo.code} - ${bestPromo.discount}${bestPromo.type === 'percentage' ? '%' : ' MAD'}`;
+          this.promoBannerSubtitle =
+            bestPromo.type === 'percentage'
+              ? 'Reduction immediate appliquee sur votre panier'
+              : 'Montant de reduction fixe applique au paiement';
+          this.promoBannerCta = 'Voir les promotions';
+        }
+      }
+    });
+  }
+
+  loadTestimonials(): void {
+    this.testimonialService
+      .getTestimonials()
+      .pipe(finalize(() => (this.testimonialsLoading = false)))
+      .subscribe({
+      next: (testimonials) => {
+        this.testimonials = testimonials.slice(0, 6);
+      },
+      error: () => {
+        this.testimonials = [];
+      }
+    });
+  }
+
+  onHeroImageLoad(isPrioritySlide: boolean): void {
+    if (isPrioritySlide) {
+      this.heroReady = true;
+    }
+  }
+
+  private rebuildCategoryCards(): void {
+    if (this.cachedCategories.length === 0) {
+      return;
+    }
+
+    this.categories = this.buildCategoryCards(this.cachedCategories, this.activeProducts);
+  }
+
+  private buildCategoryCards(categories: CategoryOption[], products: Product[]): HomeCategoryCard[] {
+    const imageByCategory: Record<string, string> = {
+      necklaces: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=900&q=80',
+      rings: 'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=900&q=80',
+      bracelets: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=900&q=80',
+      earrings: 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=900&q=80'
+    };
+
+    return categories.map((category) => ({
+      name: category.label,
+      image: imageByCategory[category.value] ?? imageByCategory['necklaces'],
+      value: category.value,
+      count: products.filter((product) => product.category === category.value).length
+    }));
   }
 
   addToCart(product: Product): void {

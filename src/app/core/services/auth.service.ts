@@ -1,7 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, delay, map, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, tap, throwError } from 'rxjs';
 
 import { User } from '../../shared/models/user.model';
 import { environment } from '../../../environments/environment';
@@ -28,6 +28,28 @@ interface ApiAuthResponse {
   token: string;
 }
 
+interface ApiMeResponse {
+  user: ApiUser;
+}
+
+interface ApiMessageResponse {
+  message: string;
+}
+
+interface ApiAdminUsersResponse {
+  data: ApiUser[];
+  meta?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+}
+
+interface ApiAdminUserResponse {
+  data: ApiUser;
+}
+
 type RegisterPayload = Pick<User, 'email' | 'password' | 'fullName' | 'phone'> & {
   confirmPassword?: string;
   address?: string;
@@ -38,6 +60,23 @@ type AdminUserPayload = Pick<User, 'email' | 'fullName' | 'phone' | 'role'> & {
   password?: string;
 };
 
+type AdminUsersQuery = {
+  page?: number;
+  perPage?: number;
+  search?: string;
+  role?: User['role'] | 'all';
+};
+
+type AdminUsersResult = {
+  users: User[];
+  meta: {
+    currentPage: number;
+    lastPage: number;
+    perPage: number;
+    total: number;
+  };
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -46,6 +85,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly apiBaseUrl = `${environment.apiUrl}/auth`;
+  private readonly adminApiBaseUrl = `${environment.apiUrl}/admin/users`;
 
   private readonly currentUserSubject = new BehaviorSubject<User | null>(null);
   readonly currentUser$ = this.currentUserSubject.asObservable();
@@ -158,13 +198,36 @@ export class AuthService {
         .subscribe({ error: () => void 0 });
     }
 
-    if (this.isBrowser) {
-      localStorage.removeItem('authToken');
-      sessionStorage.removeItem('authToken');
-      localStorage.removeItem('currentUser');
+    this.clearSession();
+  }
+
+  verifyAdminAccess(): Observable<boolean> {
+    const token = this.getStoredToken();
+
+    if (!token) {
+      this.clearSession();
+      return of(false);
     }
 
-    this.currentUserSubject.next(null);
+    return this.http
+      .get<ApiMeResponse>(`${this.apiBaseUrl}/me`, {
+        headers: this.buildAuthHeaders(token)
+      })
+      .pipe(
+        map((response) => this.mapApiUser(response.user)),
+        tap((user) => {
+          if (this.isBrowser) {
+            localStorage.setItem('currentUser', JSON.stringify(user));
+          }
+
+          this.currentUserSubject.next(user);
+        }),
+        map((user) => user.role === 'admin'),
+        catchError(() => {
+          this.clearSession();
+          return of(false);
+        })
+      );
   }
 
   isLoggedIn(): boolean {
@@ -185,117 +248,269 @@ export class AuthService {
   }
 
   getAllUsers(): Observable<User[]> {
-    return of([...this.users]);
+    const token = this.getStoredToken();
+
+    if (!token) {
+      return of([]);
+    }
+
+    return this.getAdminUsers({ perPage: 100 }).pipe(map((response) => response.users));
+  }
+
+  getAdminUsers(query: AdminUsersQuery = {}): Observable<AdminUsersResult> {
+    const token = this.getStoredToken();
+
+    if (!token) {
+      return of({
+        users: [],
+        meta: {
+          currentPage: 1,
+          lastPage: 1,
+          perPage: query.perPage ?? 10,
+          total: 0
+        }
+      });
+    }
+
+    let params = new HttpParams();
+
+    if (query.page) {
+      params = params.set('page', String(query.page));
+    }
+
+    if (query.perPage) {
+      params = params.set('per_page', String(query.perPage));
+    }
+
+    if (query.search?.trim()) {
+      params = params.set('search', query.search.trim());
+    }
+
+    if (query.role === 'admin' || query.role === 'visitor') {
+      params = params.set('role', query.role);
+    }
+
+    return this.http
+      .get<ApiAdminUsersResponse>(this.adminApiBaseUrl, {
+        headers: this.buildAuthHeaders(token),
+        params
+      })
+      .pipe(
+        map((response) => ({
+          users: response.data.map((apiUser) => this.mapApiUser(apiUser)),
+          meta: {
+            currentPage: response.meta?.current_page ?? 1,
+            lastPage: response.meta?.last_page ?? 1,
+            perPage: response.meta?.per_page ?? (query.perPage ?? 10),
+            total: response.meta?.total ?? response.data.length
+          }
+        })),
+        catchError((error) => {
+          this.handleUnauthorized(error);
+          return throwError(() => new Error(this.getApiErrorMessage(error)));
+        })
+      );
   }
 
   createUser(userData: AdminUserPayload): Observable<User> {
-    const emailExists = this.users.some((user) => user.email.toLowerCase() === userData.email.toLowerCase());
+    const token = this.getStoredToken();
 
-    if (emailExists) {
-      return throwError(() => new Error('Cet email est deja utilise'));
+    if (!token) {
+      return throwError(() => new Error('Authentification requise'));
     }
 
-    const newUser: User = {
-      id: Date.now(),
-      email: userData.email,
-      password: userData.password ?? 'Temp@123',
-      fullName: userData.fullName,
-      address: userData.address ?? '',
-      phone: userData.phone,
-      role: userData.role,
-      createdAt: new Date()
-    };
-
-    this.users = [newUser, ...this.users];
-    this.saveUsers();
-
-    return of(newUser).pipe(delay(300));
+    return this.http
+      .post<ApiAdminUserResponse>(
+        this.adminApiBaseUrl,
+        {
+          full_name: userData.fullName,
+          email: userData.email,
+          phone: userData.phone,
+          address: userData.address ?? '',
+          role: userData.role,
+          password: userData.password
+        },
+        {
+          headers: this.buildAuthHeaders(token)
+        }
+      )
+      .pipe(
+        map((response) => this.mapApiUser(response.data)),
+        catchError((error) => {
+          this.handleUnauthorized(error);
+          return throwError(() => new Error(this.getApiErrorMessage(error)));
+        })
+      );
   }
 
   updateUser(userId: number, userData: Partial<AdminUserPayload>): Observable<User> {
-    const userIndex = this.users.findIndex((user) => user.id === userId);
+    const token = this.getStoredToken();
 
-    if (userIndex === -1) {
-      return throwError(() => new Error('Utilisateur introuvable'));
+    if (!token) {
+      return throwError(() => new Error('Authentification requise'));
     }
 
-    if (userData.email) {
-      const emailExists = this.users.some(
-        (user) => user.id !== userId && user.email.toLowerCase() === userData.email!.toLowerCase()
+    const payload: Record<string, unknown> = {};
+
+    if (userData.fullName !== undefined) {
+      payload['full_name'] = userData.fullName;
+    }
+
+    if (userData.email !== undefined) {
+      payload['email'] = userData.email;
+    }
+
+    if (userData.phone !== undefined) {
+      payload['phone'] = userData.phone;
+    }
+
+    if (userData.address !== undefined) {
+      payload['address'] = userData.address;
+    }
+
+    if (userData.role !== undefined) {
+      payload['role'] = userData.role;
+    }
+
+    if (userData.password) {
+      payload['password'] = userData.password;
+    }
+
+    return this.http
+      .patch<{ data: ApiUser }>(`${this.adminApiBaseUrl}/${userId}`, payload, {
+        headers: this.buildAuthHeaders(token)
+      })
+      .pipe(
+        map((response) => {
+          const updatedUser = this.mapApiUser(response.data);
+          const currentUser = this.currentUserSubject.value;
+
+          if (currentUser?.id === userId) {
+            if (this.isBrowser) {
+              localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            }
+
+            this.currentUserSubject.next(updatedUser);
+          }
+
+          return updatedUser;
+        }),
+        catchError((error) => {
+          this.handleUnauthorized(error);
+          return throwError(() => new Error(this.getApiErrorMessage(error)));
+        })
       );
-
-      if (emailExists) {
-        return throwError(() => new Error('Cet email est deja utilise'));
-      }
-    }
-
-    const updatedUser: User = {
-      ...this.users[userIndex],
-      ...userData,
-      address: userData.address ?? this.users[userIndex].address
-    };
-
-    this.users[userIndex] = updatedUser;
-    this.saveUsers();
-
-    const currentUser = this.currentUserSubject.value;
-
-    if (currentUser?.id === userId) {
-      const nextCurrentUser = { ...currentUser, ...updatedUser } as User;
-
-      if (this.isBrowser) {
-        localStorage.setItem('currentUser', JSON.stringify(nextCurrentUser));
-      }
-
-      this.currentUserSubject.next(nextCurrentUser);
-    }
-
-    return of(updatedUser).pipe(delay(300));
   }
 
   deleteUser(userId: number): Observable<void> {
-    const userToDelete = this.users.find((user) => user.id === userId);
+    const token = this.getStoredToken();
 
-    if (!userToDelete) {
-      return throwError(() => new Error('Utilisateur introuvable'));
+    if (!token) {
+      return throwError(() => new Error('Authentification requise'));
     }
 
-    this.users = this.users.filter((user) => user.id !== userId);
-    this.saveUsers();
+    return this.http.delete<void>(`${this.adminApiBaseUrl}/${userId}`, { headers: this.buildAuthHeaders(token) }).pipe(
+      catchError((error) => {
+        this.handleUnauthorized(error);
+        return throwError(() => new Error(this.getApiErrorMessage(error)));
+      })
+    );
+  }
 
-    const currentUser = this.currentUserSubject.value;
-
-    if (currentUser?.id === userId) {
-      this.logout();
+  private handleUnauthorized(error: unknown): void {
+    if (error instanceof HttpErrorResponse && error.status === 401) {
+      this.clearSession();
     }
-
-    return of(void 0).pipe(delay(300));
   }
 
   updateProfile(userData: Partial<User>): Observable<User> {
-    const currentUser = this.getCurrentUser();
+    const token = this.getStoredToken();
 
-    if (!currentUser) {
+    if (!token) {
       return throwError(() => new Error('Utilisateur non connecté'));
     }
 
-    const userIndex = this.users.findIndex((u) => u.id === currentUser.id);
+    const payload: Record<string, unknown> = {};
 
-    if (userIndex !== -1) {
-      this.users[userIndex] = { ...this.users[userIndex], ...userData };
-      this.saveUsers();
-
-      const updatedUser = { ...currentUser, ...userData } as User;
-
-      if (this.isBrowser) {
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-      }
-
-      this.currentUserSubject.next(updatedUser);
-      return of(updatedUser).pipe(delay(500));
+    if (userData.fullName !== undefined) {
+      payload['full_name'] = userData.fullName;
     }
 
-    return throwError(() => new Error('Erreur lors de la mise à jour'));
+    if (userData.email !== undefined) {
+      payload['email'] = userData.email;
+    }
+
+    if (userData.phone !== undefined) {
+      payload['phone'] = userData.phone;
+    }
+
+    if (userData.address !== undefined) {
+      payload['address'] = userData.address;
+    }
+
+    return this.http
+      .patch<ApiMeResponse>(`${this.apiBaseUrl}/me`, payload, {
+        headers: this.buildAuthHeaders(token)
+      })
+      .pipe(
+        map((response) => this.mapApiUser(response.user)),
+        tap((updatedUser) => {
+          if (this.isBrowser) {
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+          }
+
+          this.currentUserSubject.next(updatedUser);
+        }),
+        catchError((error) => {
+          this.handleUnauthorized(error);
+          return throwError(() => new Error(this.getApiErrorMessage(error)));
+        })
+      );
+  }
+
+  changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Observable<void> {
+    const token = this.getStoredToken();
+
+    if (!token) {
+      return throwError(() => new Error('Utilisateur non connecté'));
+    }
+
+    return this.http
+      .post<ApiMessageResponse>(
+        `${this.apiBaseUrl}/change-password`,
+        {
+          current_password: currentPassword,
+          new_password: newPassword,
+          new_password_confirmation: confirmPassword
+        },
+        {
+          headers: this.buildAuthHeaders(token)
+        }
+      )
+      .pipe(
+        map(() => void 0),
+        catchError((error) => {
+          this.handleUnauthorized(error);
+          return throwError(() => new Error(this.getApiErrorMessage(error)));
+        })
+      );
+  }
+
+  deleteMyAccount(): Observable<void> {
+    const token = this.getStoredToken();
+
+    if (!token) {
+      return throwError(() => new Error('Utilisateur non connecté'));
+    }
+
+    return this.http.delete<ApiMessageResponse>(`${this.apiBaseUrl}/me`, { headers: this.buildAuthHeaders(token) }).pipe(
+      tap(() => this.clearSession()),
+      map(() => void 0),
+      catchError((error) => {
+        this.handleUnauthorized(error);
+        return throwError(() => new Error(this.getApiErrorMessage(error)));
+      })
+    );
   }
 
   private storeSession(user: User, token: string, rememberMe: boolean): void {
@@ -312,6 +527,16 @@ export class AuthService {
     }
 
     this.currentUserSubject.next(user);
+  }
+
+  private clearSession(): void {
+    if (this.isBrowser) {
+      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('currentUser');
+    }
+
+    this.currentUserSubject.next(null);
   }
 
   private getStoredToken(): string | null {
@@ -343,6 +568,10 @@ export class AuthService {
 
   private getApiErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
+      if (error.status === 401) {
+        return 'Session expiree. Veuillez vous reconnecter.';
+      }
+
       const apiError = error.error as { message?: string; errors?: Record<string, string[]> } | string | null;
 
       if (typeof apiError === 'string') {

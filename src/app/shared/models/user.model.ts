@@ -5,6 +5,6 @@ export interface User {
   fullName: string;
   address: string;
   phone: string;
-  role: 'user' | 'admin';
+  role: 'visitor' | 'admin';
   createdAt: Date;
 }

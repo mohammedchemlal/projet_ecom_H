@@ -33,7 +33,12 @@ export class LoginComponent {
 
     const { email, password } = this.form.getRawValue();
 
-    this.authService.login(email, password).subscribe(() => {
+    this.authService.login(email, password).subscribe((response) => {
+      if (response.user.role === 'admin') {
+        void this.router.navigate(['/admin']);
+        return;
+      }
+
       void this.router.navigate(['/home']);
     });
   }

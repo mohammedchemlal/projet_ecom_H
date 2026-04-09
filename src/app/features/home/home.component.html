@@ -2,6 +2,17 @@
 <div class="home-page">
   <!-- Hero Carousel -->
   <div class="hero-carousel">
+    @if (!heroReady) {
+      <div class="hero-skeleton" aria-hidden="true">
+        <div class="hero-skeleton-card">
+          <span class="skeleton skeleton-kicker"></span>
+          <span class="skeleton skeleton-title"></span>
+          <span class="skeleton skeleton-text"></span>
+          <span class="skeleton skeleton-cta"></span>
+        </div>
+      </div>
+    }
+
     <p-carousel
       [value]="heroSlides"
       [numVisible]="1"
@@ -12,12 +23,17 @@
       [showNavigators]="true"
     >
       <ng-template let-slide pTemplate="item">
-        <div
-          class="hero-slide"
-          [style.background-image]="
-            'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(' + slide.image + ')'
-          "
-        >
+        <div class="hero-slide">
+          <img
+            class="hero-image"
+            [src]="slide.image"
+            [alt]="slide.alt"
+            [attr.loading]="slide.priority ? 'eager' : 'lazy'"
+            [attr.fetchpriority]="slide.priority ? 'high' : 'auto'"
+            (load)="onHeroImageLoad(slide.priority)"
+            (error)="onHeroImageLoad(slide.priority)"
+          />
+          <div class="hero-overlay"></div>
           <div class="container px-3 md:px-5">
             <div class="hero-content flex flex-column align-items-start">
               <h1 class="hero-title">{{ slide.title }}</h1>
@@ -43,7 +59,7 @@
         </a>
       </div>
 
-      @if (!isLoading) {
+      @if (!productsLoading) {
         <div class="products-grid grid">
           @for (product of featuredProducts; track product.id) {
             <div class="product-card">
@@ -133,7 +149,7 @@
         styleClass="category-carousel"
       >
         <ng-template pTemplate="item" let-category>
-          <a class="category-card" [routerLink]="category.link">
+          <a class="category-card" [routerLink]="['/products']" [queryParams]="{ category: category.value }">
             <div class="category-image">
               <img [src]="category.image" [alt]="category.name" />
             </div>
@@ -159,9 +175,9 @@
       >
         <div class="promo-text">
           <span class="promo-label">Offre Limitée</span>
-          <h2>Jusqu'à -30%</h2>
-          <p>Sur une sélection de bijoux</p>
-          <a class="btn-primary" routerLink="/products">Profiter de l'offre</a>
+          <h2>{{ promoBannerTitle }}</h2>
+          <p>{{ promoBannerSubtitle }}</p>
+          <a class="btn-primary" routerLink="/products">{{ promoBannerCta }}</a>
         </div>
         <div class="promo-image">
           <img
@@ -182,7 +198,7 @@
         <div class="section-line"></div>
       </div>
 
-      @if (!isLoading) {
+      @if (!productsLoading) {
         <div class="products-grid grid">
           @for (product of newArrivals; track product.id) {
             <div class="product-card">
@@ -225,19 +241,34 @@
         <div class="section-line"></div>
       </div>
 
-      <div class="testimonials-grid grid">
-        @for (testimonial of testimonials; track testimonial.name) {
-          <div class="testimonial-card">
-            <div class="testimonial-avatar">
-              <img [src]="testimonial.image" [alt]="testimonial.name" loading="lazy" decoding="async" />
+      @if (testimonialsLoading) {
+        <div class="testimonials-grid grid">
+          @for (_ of [1, 2, 3]; track _) {
+            <div class="testimonial-card testimonial-skeleton">
+              <div class="skeleton skeleton-avatar"></div>
+              <div class="skeleton skeleton-rating"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text short"></div>
             </div>
-            <p-rating [(ngModel)]="testimonial.rating" [readonly]="true"></p-rating>
-            <p class="testimonial-comment">"{{ testimonial.comment }}"</p>
-            <h4>{{ testimonial.name }}</h4>
-            <span class="testimonial-role">{{ testimonial.role }}</span>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      } @else if (testimonials.length > 0) {
+        <div class="testimonials-grid grid">
+          @for (testimonial of testimonials; track testimonial.id) {
+            <div class="testimonial-card">
+              <div class="testimonial-avatar">
+                <img [src]="testimonial.customerImage" [alt]="testimonial.customerName" loading="lazy" decoding="async" />
+              </div>
+              <p-rating [(ngModel)]="testimonial.rating" [readonly]="true"></p-rating>
+              <p class="testimonial-comment">"{{ testimonial.comment }}"</p>
+              <h4>{{ testimonial.customerName }}</h4>
+              <span class="testimonial-role">{{ testimonial.role || 'Client(e)' }}</span>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="testimonials-empty">Aucun témoignage disponible pour le moment.</p>
+      }
     </div>
   </div>
 

@@ -4,7 +4,20 @@
     <button pButton type="button" label="Nouvel utilisateur" icon="pi pi-plus" (click)="openNew()"></button>
   </header>
 
-  <p-table [value]="users()" [loading]="loading()" responsiveLayout="scroll">
+  <p-table
+    [value]="users()"
+    [loading]="loading()"
+    responsiveLayout="scroll"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="rows()"
+    [first]="(currentPage() - 1) * rows()"
+    [totalRecords]="totalRecords()"
+    [rowsPerPageOptions]="[5, 10, 20, 50]"
+    currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} utilisateurs"
+    [showCurrentPageReport]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+  >
     <ng-template pTemplate="header">
       <tr>
         <th>Nom</th>
@@ -12,6 +25,33 @@
         <th>Telephone</th>
         <th>Role</th>
         <th>Actions</th>
+      </tr>
+      <tr class="filter-row">
+        <th colspan="3">
+          <span class="p-input-icon-left inline-search">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              type="text"
+              placeholder="Rechercher par nom, email ou téléphone"
+              [value]="searchTerm()"
+              (input)="onSearchInput($event)"
+            />
+          </span>
+        </th>
+        <th>
+          <p-select
+            class="inline-role-select"
+            [options]="roleFilterOptions"
+            [ngModel]="roleFilter()"
+            (ngModelChange)="onRoleFilterChange($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Tous les rôles"
+            [appendTo]="'body'"
+          ></p-select>
+        </th>
+        <th></th>
       </tr>
     </ng-template>
 
@@ -27,6 +67,12 @@
           <button pButton type="button" icon="pi pi-pencil" class="p-button-text" (click)="editUser(user)" aria-label="Modifier"></button>
           <button pButton type="button" icon="pi pi-trash" class="p-button-text" (click)="deleteUser(user)" aria-label="Supprimer"></button>
         </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="5">Aucun utilisateur trouve pour ces filtres.</td>
       </tr>
     </ng-template>
   </p-table>
@@ -48,6 +94,10 @@
         <input pInputText type="email" formControlName="email" />
       </label>
       <label>
+        Mot de passe {{ isEditing() ? '(laisser vide pour ne pas changer)' : '' }}
+        <input pInputText type="password" formControlName="password" />
+      </label>
+      <label>
         Telephone
         <input pInputText type="tel" formControlName="phone" />
       </label>
@@ -58,10 +108,13 @@
       <label>
         Role
         <p-select
+          class="dialog-role-select"
           formControlName="role"
           [options]="roleOptions"
           optionLabel="label"
           optionValue="value"
+          [appendTo]="'body'"
+          placeholder="Selectionner un role"
         ></p-select>
       </label>
     </form>

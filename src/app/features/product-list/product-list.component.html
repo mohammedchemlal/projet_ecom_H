@@ -45,7 +45,7 @@
             Catégories
           </h4>
           <div class="categories-list">
-            @for (category of categories; track category) {
+            @for (category of visibleCategories(); track category.value) {
               <div
                 class="category-item"
                 [class.active]="selectedCategories.includes(category.value)"
@@ -73,6 +73,7 @@
               [range]="true"
               [min]="0"
               [max]="maxPrice"
+              (ngModelChange)="onPriceRangeChange()"
               [style]="{ width: '100%' }"
             ></p-slider>
             <div class="price-range-values">
@@ -90,7 +91,7 @@
 
         <!-- Promotions Filter -->
         <div class="filter-group">
-          <div class="promo-filter" (click)="showPromotionsOnly = !showPromotionsOnly">
+          <div class="promo-filter" (click)="togglePromotionsFilter()">
             <div class="checkbox-custom" [class.checked]="showPromotionsOnly">
               @if (showPromotionsOnly) {
                 <i class="pi pi-check"></i>
@@ -113,7 +114,7 @@
               </div>
             }
             @if (priceRange[0] > 0 || priceRange[1] < maxPrice) {
-              <div class="filter-tag" (click)="priceRange = [0, maxPrice]">
+              <div class="filter-tag" (click)="resetPriceFilter()">
                 <span
                   >Prix: {{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }} -
                   {{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span
@@ -122,7 +123,7 @@
               </div>
             }
             @if (showPromotionsOnly) {
-              <div class="filter-tag" (click)="showPromotionsOnly = false">
+              <div class="filter-tag" (click)="togglePromotionsFilter()">
                 <span>En promotion</span>
                 <i class="pi pi-times-circle"></i>
               </div>
@@ -282,7 +283,7 @@
     <div class="filter-group-mobile">
       <h4>Catégories</h4>
       <div class="categories-mobile">
-        @for (category of categories; track category) {
+        @for (category of visibleCategories(); track category.value) {
           <div
             class="category-mobile"
             [class.active]="selectedCategories.includes(category.value)"
@@ -298,7 +299,13 @@
     <!-- Price Range -->
     <div class="filter-group-mobile">
       <h4>Prix</h4>
-      <p-slider [(ngModel)]="priceRange" [range]="true" [min]="0" [max]="maxPrice"></p-slider>
+      <p-slider 
+        [(ngModel)]="priceRange" 
+        [range]="true" 
+        [min]="0" 
+        [max]="maxPrice"
+        (ngModelChange)="onPriceRangeChange()"
+      ></p-slider>
       <div class="price-values">
         <span>{{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
         <span>{{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
@@ -308,7 +315,11 @@
     <!-- Promotions -->
     <div class="filter-group-mobile">
       <label class="checkbox-label">
-        <input type="checkbox" [(ngModel)]="showPromotionsOnly" />
+        <input 
+          type="checkbox" 
+          [(ngModel)]="showPromotionsOnly"
+          (change)="togglePromotionsFilter()"
+        />
         <span>En promotion uniquement</span>
       </label>
     </div>
@@ -319,8 +330,8 @@
       <button class="btn-secondary" (click)="clearFilters(); sidebarVisible = false">
         Effacer tout
       </button>
-      <button class="btn-primary" (click)="applyFilters(); sidebarVisible = false">
-        Voir les résultats
+      <button class="btn-primary" (click)="sidebarVisible = false">
+        Fermer
       </button>
     </div>
   </ng-template>

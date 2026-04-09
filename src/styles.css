@@ -39,16 +39,6 @@
 	--radius-md: 0.9rem;
 }
 
-@font-face {
-	font-family: 'ValeriaLogo';
-	src:
-		url('/fonts/valeria-logo.woff2') format('woff2'),
-		url('/fonts/valeria-logo.woff') format('woff');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
-}
-
 * {
 	box-sizing: border-box;
 }

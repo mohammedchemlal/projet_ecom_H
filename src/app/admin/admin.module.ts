@@ -29,6 +29,7 @@ import { AdminOrdersComponent } from './admin-orders/admin-orders.component';
 import { AdminUsersComponent } from './admin-users/admin-users.component';
 import { AdminCategoriesComponent } from './admin-categories/admin-categories.component';
 import { AdminPromoCodesComponent } from './admin-promo-codes/admin-promo-codes.component';
+import { AdminTestimonialsComponent } from './admin-testimonials/admin-testimonials.component';
 import { AdminLayoutComponent } from './admin-layout/admin-layout.component';
 
 const routes: Routes = [
@@ -42,7 +43,8 @@ const routes: Routes = [
       { path: 'orders', component: AdminOrdersComponent },
       { path: 'users', component: AdminUsersComponent },
       { path: 'categories', component: AdminCategoriesComponent },
-      { path: 'promo-codes', component: AdminPromoCodesComponent }
+      { path: 'promo-codes', component: AdminPromoCodesComponent },
+      { path: 'testimonials', component: AdminTestimonialsComponent }
     ]
   }
 ];
@@ -77,6 +79,7 @@ const routes: Routes = [
     AdminUsersComponent,
     AdminCategoriesComponent,
     AdminPromoCodesComponent,
+    AdminTestimonialsComponent,
     AdminLayoutComponent
   ]
 })

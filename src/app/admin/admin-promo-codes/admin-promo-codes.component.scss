@@ -73,6 +73,14 @@
   color: #374151;
 }
 
+.dialog-select {
+  width: 100%;
+}
+
+:host ::ng-deep .dialog-select .p-select {
+  width: 100%;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Params, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { OrderService } from '../../core/services/order.service';
 import { PromoCodeService } from '../../core/services/promo-code.service';
 import { ProductService } from '../../core/services/product.service';
+import type { User } from '../../shared/models/user.model';
 import type { PromoCode } from '../../shared/models/promo-code.model';
 
 interface AdminNavItem {
@@ -36,13 +37,16 @@ export class AdminLayoutComponent implements OnInit {
   private readonly promoCodeService = inject(PromoCodeService);
   private readonly productService = inject(ProductService);
 
-  readonly siteLogoSrc = '/valeria-logo.png';
+  readonly siteLogoSrc = '/favicon.ico';
   logoLoadFailed = false;
   headerLogoLoadFailed = false;
 
   sidebarVisible = true;
   navItems: AdminNavItem[] = [];
   currentUserLabel = 'Utilisateur';
+  readonly currentUser = signal<User | null>(null);
+  readonly profilePanelVisible = signal(false);
+  readonly currentUserInitials = computed(() => this.getUserInitials(this.currentUser()));
   private touchStartX: number | null = null;
   private touchStartY: number | null = null;
 
@@ -58,12 +62,14 @@ export class AdminLayoutComponent implements OnInit {
       { label: 'Commandes', icon: 'pi pi-shopping-cart', route: '/admin/orders', hint: 'Suivi ventes' },
       { label: 'Utilisateurs', icon: 'pi pi-users', route: '/admin/users', hint: 'Comptes clients' },
       { label: 'Catégories', icon: 'pi pi-tags', route: '/admin/categories', hint: 'Organisation' },
-      { label: 'Codes promo', icon: 'pi pi-ticket', route: '/admin/promo-codes', hint: 'Marketing' }
+      { label: 'Codes promo', icon: 'pi pi-ticket', route: '/admin/promo-codes', hint: 'Marketing' },
+      { label: 'Témoignages', icon: 'pi pi-comment', route: '/admin/testimonials', hint: 'Preuve sociale' }
     ];
 
     this.authService.currentUser$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => {
+        this.currentUser.set(user);
         this.currentUserLabel = user?.fullName?.trim() || user?.email?.trim() || 'Utilisateur';
       });
 
@@ -150,6 +156,14 @@ export class AdminLayoutComponent implements OnInit {
     this.sidebarVisible = !this.sidebarVisible;
   }
 
+  toggleProfilePanel(): void {
+    this.profilePanelVisible.update((visible) => !visible);
+  }
+
+  closeProfilePanel(): void {
+    this.profilePanelVisible.set(false);
+  }
+
   closeSidebar(): void {
     this.sidebarVisible = false;
   }
@@ -191,6 +205,8 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   onNavigationClick(): void {
+    this.closeProfilePanel();
+
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
       this.closeSidebar();
     }
@@ -233,7 +249,29 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   logout() {
+    this.closeProfilePanel();
     this.authService.logout();
     this.router.navigate(['/home']);
+  }
+
+  private getUserInitials(user: User | null): string {
+    if (!user) {
+      return 'U';
+    }
+
+    const parts = user.fullName
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return user.email?.trim().charAt(0).toUpperCase() || 'U';
+    }
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
   }
 }

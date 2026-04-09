@@ -81,7 +81,7 @@ export class AdminCategoriesComponent implements OnInit {
       rejectLabel: 'Annuler',
       accept: () => {
         this.categoryService.deleteCategory(category.id).subscribe(() => {
-          this.loadCategories();
+          this.categories.update((items) => items.filter((item) => item.id !== category.id));
           this.messageService.add({
             severity: 'success',
             summary: 'Succes',
@@ -102,8 +102,8 @@ export class AdminCategoriesComponent implements OnInit {
     const selectedCategory = this.selectedCategory();
 
     if (this.isEditing() && selectedCategory) {
-      this.categoryService.updateCategory(selectedCategory.id, payload).subscribe(() => {
-        this.loadCategories();
+      this.categoryService.updateCategory(selectedCategory.id, payload).subscribe((updatedCategory) => {
+        this.categories.update((items) => items.map((item) => (item.id === selectedCategory.id ? updatedCategory : item)));
         this.messageService.add({
           severity: 'success',
           summary: 'Succes',
@@ -115,8 +115,8 @@ export class AdminCategoriesComponent implements OnInit {
       return;
     }
 
-    this.categoryService.createCategory(payload).subscribe(() => {
-      this.loadCategories();
+    this.categoryService.createCategory(payload).subscribe((createdCategory) => {
+      this.categories.update((items) => [...items, createdCategory]);
       this.messageService.add({
         severity: 'success',
         summary: 'Succes',
