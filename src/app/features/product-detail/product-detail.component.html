@@ -1,306 +1,275 @@
-@if (!isLoading) {
-  <div class="product-detail-page">
-    @if (product) {
-      <div class="container">
-        <!-- Back Button -->
-        <button class="back-button" (click)="goBack()">
-          <i class="pi pi-arrow-left"></i>
-          Retour
-        </button>
-        <!-- Product Main Section -->
-        <div class="product-main">
-          <!-- Image Gallery -->
-          <div class="product-gallery">
-            <div class="gallery-thumbnails">
-              @for (image of product.images; track image; let i = $index) {
-                <div
-                  class="thumbnail"
-                  [class.active]="selectedImageIndex === i"
-                  (click)="selectedImageIndex = i"
-                >
-                  <img [src]="image" [alt]="product.name + ' - ' + i" loading="lazy" decoding="async" />
-                </div>
-              }
-            </div>
-            <div class="gallery-main">
-              <div class="main-image" (click)="openZoomModal(selectedImageIndex)">
-                <img [src]="product.images[selectedImageIndex]" [alt]="product.name" loading="eager" fetchpriority="high" decoding="async" />
-                <div class="zoom-icon">
-                  <i class="pi pi-search-plus"></i>
-                </div>
-              </div>
-              <!-- Thumbnails for mobile -->
-              <div class="gallery-thumbnails-mobile">
-                @for (image of product.images; track image; let i = $index) {
-                  <div
-                    class="thumbnail-mobile"
-                    [class.active]="selectedImageIndex === i"
-                    (click)="selectedImageIndex = i"
-                  >
-                    <img [src]="image" [alt]="product.name + ' - ' + i" loading="lazy" decoding="async" />
-                  </div>
-                }
-              </div>
-            </div>
-          </div>
-          <!-- Product Info -->
-          <div class="product-info">
-            <div class="product-category">
-              <span class="category-badge">{{ product.category | titlecase }}</span>
-              <span class="stock-status" [class]="getStockStatusClass()">
-                <i
-                  class="pi"
-                  [class.pi-check-circle]="product.stock > 0"
-                  [class.pi-times-circle]="product.stock === 0"
-                ></i>
-                {{ getStockStatus() }}
-              </span>
-            </div>
-            <h1 class="product-title">{{ product.name }}</h1>
-            <div class="product-rating">
-              <div class="stars">
-                @for (star of getStarsArray(product.rating); track star) {
-                  <i class="pi pi-star-fill"></i>
-                }
-                @for (star of getEmptyStarsArray(product.rating); track star) {
-                  <i class="pi pi-star"></i>
-                }
-              </div>
-              <span class="rating-value">{{ product.rating }}</span>
-              <span class="reviews-count">({{ product.reviewCount }} avis)</span>
-            </div>
-            <div class="product-price">
-              <span class="current-price">{{ getDiscountedPrice() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-              @if (product.discountPrice) {
-                <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-              }
-              @if (product.isPromotion) {
-                <span class="discount-badge">-{{ getDiscountPercentage() }}%</span>
-              }
-            </div>
-            <div class="product-description">
-              <h3>Description</h3>
-              <p>{{ product.description }}</p>
-            </div>
-            <!-- Quantity Selector -->
-            <div class="quantity-selector">
-              <label>Quantité</label>
-              <div class="quantity-controls">
-                <button class="qty-btn" (click)="decreaseQuantity()" [disabled]="quantity <= 1">
-                  <i class="pi pi-minus"></i>
-                </button>
-                <input
-                  type="number"
-                  [(ngModel)]="quantity"
-                  min="1"
-                  [max]="product.stock"
-                  class="quantity-input"
-                />
-                <button
-                  class="qty-btn"
-                  (click)="increaseQuantity()"
-                  [disabled]="quantity >= product.stock"
-                >
-                  <i class="pi pi-plus"></i>
-                </button>
-              </div>
-            </div>
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-              <button
-                class="btn-add-to-cart"
-                (click)="addToCart()"
-                [disabled]="product.stock === 0"
-              >
-                <i class="pi pi-shopping-cart"></i>
-                Ajouter au panier
-              </button>
-              <button
-                class="btn-wishlist"
-                [class.active]="isInWishlist()"
-                (click)="addToWishlist()"
-              >
-                <i class="pi pi-heart"></i>
-                <span>{{ isInWishlist() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}</span>
-              </button>
-            </div>
-            <!-- Product Features -->
-            <div class="product-features">
-              <div class="feature">
-                <i class="pi pi-truck"></i>
-                <div>
-                  <strong>Livraison gratuite</strong>
-                  <span>À partir de 500 DH d'achat</span>
-                </div>
-              </div>
-              <div class="feature">
-                <i class="pi pi-refresh"></i>
-                <div>
-                  <strong>Retours gratuits</strong>
-                  <span>Sous 30 jours</span>
-                </div>
-              </div>
-              <div class="feature">
-                <i class="pi pi-lock"></i>
-                <div>
-                  <strong>Paiement sécurisé</strong>
-                  <span>CB, PayPal, Apple Pay</span>
-                </div>
-              </div>
-              <div class="feature">
-                <i class="pi pi-gem"></i>
-                <div>
-                  <strong>Garantie 2 ans</strong>
-                  <span>Certifiée</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Tabs Section -->
-        <div class="product-tabs">
-          <div class="tabs-header">
-            <button
-              class="tab-btn"
-              [class.active]="activeTab === 'description'"
-              (click)="activeTab = 'description'"
-            >
-              Description détaillée
-            </button>
-            <button
-              class="tab-btn"
-              [class.active]="activeTab === 'reviews'"
-              (click)="activeTab = 'reviews'"
-            >
-              Avis clients ({{ reviewStats.total }})
-            </button>
-          </div>
-          <div class="tabs-content">
-            <!-- Description Tab -->
-            @if (activeTab === 'description') {
-              <div class="tab-pane">
-                <div class="description-content">
-                  <h3>Détails du produit</h3>
-                  @for (paragraph of getDetailedDescriptionParagraphs(); track paragraph) {
-                    <p>{{ paragraph }}</p>
-                  }
+<ng-container *ngIf="!isLoading; else loadingTpl">
+  <main class="product-detail-page">
+    <div class="container" *ngIf="product as product">
+      <script type="application/ld+json" *ngIf="product">{{ productJsonLd }}</script>
+      <!-- Back Button -->
+      <button class="back-button" type="button" aria-label="Retour" (click)="goBack()">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        <span class="visually-hidden">Retour</span>
+      </button>
 
-                  @for (section of getSpecificationSections(); track section.title) {
-                    <h3>{{ section.title }}</h3>
-                    <ul class="features-list">
-                      @for (item of section.items; track item) {
-                        <li><i class="pi pi-check-circle"></i> {{ item }}</li>
-                      }
-                    </ul>
-                  }
-                </div>
-              </div>
-            }
-            <!-- Reviews Tab -->
-            @if (activeTab === 'reviews') {
-              <div class="tab-pane">
-                <div class="reviews-summary">
-                  <div class="rating-summary">
-                    <div class="average-rating">
-                      <span class="rating-number">{{ reviewStats.average | number: '1.1-1' }}</span>
-                      <div class="stars">
-                        @for (star of getStarsArray(roundRating(reviewStats.average)); track star) {
-                          <i class="pi pi-star-fill"></i>
-                        }
-                        @for (
-                          star of getEmptyStarsArray(roundRating(reviewStats.average));
-                          track star
-                        ) {
-                          <i class="pi pi-star"></i>
-                        }
-                      </div>
-                      <span class="total-reviews">Basé sur {{ reviewStats.total }} avis</span>
-                    </div>
-                    <div class="rating-distribution">
-                      @for (rating of [5, 4, 3, 2, 1]; track rating) {
-                        <div class="distribution-bar">
-                          <span class="rating-label">{{ rating }} étoiles</span>
-                          <div class="bar-container">
-                            <div
-                              class="bar-fill"
-                              [style.width.%]="getPercentageForRating(rating)"
-                            ></div>
-                          </div>
-                          <span class="percentage"
-                            >{{ getPercentageForRating(rating) | number: '1.0-0' }}%</span
-                          >
-                        </div>
-                      }
-                    </div>
-                  </div>
-                  <button class="write-review-btn" (click)="showReviewDialog = true">
-                    <i class="pi pi-pencil"></i>
-                    Donner mon avis
-                  </button>
-                </div>
-                <div class="reviews-list">
-                  @for (review of reviews; track review.id) {
-                    <div class="review-card">
-                      <div class="review-header">
-                        <div class="reviewer-avatar reviewer-avatar-placeholder">
-                          <i class="pi pi-user"></i>
-                        </div>
-                        <div class="reviewer-info">
-                          <div class="reviewer-name">
-                            {{ review.userName }}
-                            @if (review.verified) {
-                              <span class="verified-badge">
-                                <i class="pi pi-check-circle"></i> Achat vérifié
-                              </span>
-                            }
-                          </div>
-                          <div class="review-date">{{ formatDate(review.date) }}</div>
-                        </div>
-                        <div class="review-rating">
-                          @for (star of getStarsArray(review.rating); track star) {
-                            <i class="pi pi-star-fill"></i>
-                          }
-                        </div>
-                      </div>
-                      @if (review.title) {
-                        <h4 class="review-title">{{ review.title }}</h4>
-                      }
-                      <p class="review-comment">{{ review.comment }}</p>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-          </div>
+      <!-- Product Main Section -->
+      <section class="product-main" aria-labelledby="product-title">
+        <!-- Image Gallery -->
+        <div class="product-gallery">
+          <aside class="gallery-thumbnails" aria-label="Vignettes">
+            <button
+              class="thumbnail"
+              *ngFor="let image of product.images; let i = index; trackBy: trackById"
+              [class.active]="selectedImageIndex === i"
+              [attr.aria-current]="selectedImageIndex === i ? 'true' : null"
+              type="button"
+              (click)="selectedImageIndex = i"
+              [attr.aria-label]="'Voir l\'image ' + (i + 1)"
+            >
+              <img [src]="image" [alt]="product.name + ' image ' + (i + 1)" loading="lazy" decoding="async" />
+            </button>
+          </aside>
+
+          <figure class="gallery-main">
+            <div class="main-image" role="img" aria-label="Image principale du produit" (click)="openZoomModal(selectedImageIndex)">
+              <img [src]="product.images[selectedImageIndex]" [alt]="product.name + ' image principale'" loading="eager" fetchpriority="high" decoding="async" />
+              <button class="zoom-icon" type="button" aria-label="Agrandir l\'image" (click)="openZoomModal(selectedImageIndex)">
+                <i class="pi pi-search-plus" aria-hidden="true"></i>
+              </button>
+            </div>
+            <figcaption class="sr-only">Galerie du produit</figcaption>
+
+            <!-- Thumbnails for mobile -->
+            <div class="gallery-thumbnails-mobile" aria-hidden="true">
+              <button
+                class="thumbnail-mobile"
+                *ngFor="let image of product.images; let i = index; trackBy: trackById"
+                [class.active]="selectedImageIndex === i"
+                type="button"
+                (click)="selectedImageIndex = i"
+                [attr.aria-label]="'Voir l\'image ' + (i + 1)"
+              >
+                <img [src]="image" [alt]="product.name + ' image ' + (i + 1)" loading="lazy" decoding="async" />
+              </button>
+            </div>
+          </figure>
         </div>
-        <!-- Related Products -->
-        @if (relatedProducts.length > 0) {
-          <div class="related-products">
-            <h2 class="section-title">Produits similaires</h2>
-            <div class="related-products-grid">
-              @for (related of relatedProducts; track related) {
-                <div class="related-product-card" [routerLink]="['/product', related.id]">
-                  <div class="product-image">
-                    <img [src]="related.images[0]" [alt]="related.name" loading="lazy" decoding="async" />
-                  </div>
-                  <div class="product-info">
-                    <h3>{{ related.name }}</h3>
-                    <div class="product-price">
-                      <span class="current-price">{{
-                        related.discountPrice || related.price | currency:'MAD':'symbol':'1.0-0':'fr-MA'
-                      }}</span>
-                    </div>
-                    <p-rating [(ngModel)]="related.rating" [readonly]="true"></p-rating>
-                  </div>
-                </div>
-              }
+
+        <!-- Product Info -->
+        <aside class="product-info" aria-labelledby="product-title">
+          <div class="product-category">
+            <span class="category-badge">{{ product.category | titlecase }}</span>
+            <span class="stock-status" [class]="getStockStatusClass()" aria-live="polite">
+              <i
+                class="pi"
+                [class.pi-check-circle]="product.stock > 0"
+                [class.pi-times-circle]="product.stock === 0"
+                aria-hidden="true"
+              ></i>
+              {{ getStockStatus() }}
+            </span>
+          </div>
+          <h1 id="product-title" class="product-title">{{ product.name }}</h1>
+          <div class="product-rating" aria-label="Note du produit">
+            <div class="stars" aria-hidden="true">
+              <i class="pi pi-star-fill" *ngFor="let s of getStarsArray(product.rating); trackBy: trackById"></i>
+              <i class="pi pi-star" *ngFor="let s of getEmptyStarsArray(product.rating); trackBy: trackById"></i>
+            </div>
+            <span class="rating-value">{{ product.rating }}</span>
+            <span class="reviews-count">({{ product.reviewCount }} avis)</span>
+          </div>
+
+          <div class="product-price">
+            <span class="current-price">{{ getDiscountedPrice() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            <span *ngIf="product.discountPrice" class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            <span *ngIf="product.isPromotion" class="discount-badge">-{{ getDiscountPercentage() }}%</span>
+          </div>
+
+          <div class="product-description">
+            <h2>Description</h2>
+            <p>{{ product.description }}</p>
+          </div>
+
+          <!-- Quantity Selector -->
+          <div class="quantity-selector">
+            <label for="quantity-input">Quantité</label>
+            <div class="quantity-controls">
+              <button class="qty-btn" type="button" (click)="decreaseQuantity()" [disabled]="quantity <= 1" aria-label="Diminuer la quantité">
+                <i class="pi pi-minus" aria-hidden="true"></i>
+              </button>
+              <input
+                id="quantity-input"
+                type="number"
+                [(ngModel)]="quantity"
+                min="1"
+                [max]="product.stock"
+                class="quantity-input"
+                aria-label="Quantité du produit"
+              />
+              <button class="qty-btn" type="button" (click)="increaseQuantity()" [disabled]="quantity >= product.stock" aria-label="Augmenter la quantité">
+                <i class="pi pi-plus" aria-hidden="true"></i>
+              </button>
             </div>
           </div>
-        }
-      </div>
-    }
-  </div>
-} @else {
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button class="btn-add-to-cart" type="button" (click)="addToCart()" [disabled]="product.stock === 0" aria-label="Ajouter au panier">
+              <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+              Ajouter au panier
+            </button>
+            <button class="btn-wishlist" type="button" [attr.aria-pressed]="isInWishlist()" (click)="addToWishlist()" aria-label="Ajouter aux favoris">
+              <i class="pi pi-heart" aria-hidden="true"></i>
+              <span>{{ isInWishlist() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}</span>
+            </button>
+          </div>
+
+          <!-- Product Features -->
+          <div class="product-features" aria-hidden="false">
+            <div class="feature">
+              <i class="pi pi-truck" aria-hidden="true"></i>
+              <div>
+                <strong>Livraison gratuite</strong>
+                <span>À partir de 500 DH d'achat</span>
+              </div>
+            </div>
+            <div class="feature">
+              <i class="pi pi-refresh" aria-hidden="true"></i>
+              <div>
+                <strong>Retours gratuits</strong>
+                <span>Sous 30 jours</span>
+              </div>
+            </div>
+            <div class="feature">
+              <i class="pi pi-lock" aria-hidden="true"></i>
+              <div>
+                <strong>Paiement sécurisé</strong>
+                <span>CB, PayPal, Apple Pay</span>
+              </div>
+            </div>
+            <div class="feature">
+              <i class="pi pi-gem" aria-hidden="true"></i>
+              <div>
+                <strong>Garantie 2 ans</strong>
+                <span>Certifiée</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- Tabs Section -->
+      <section class="product-tabs" aria-labelledby="tabs-heading">
+        <h2 id="tabs-heading" class="sr-only">Informations supplémentaires</h2>
+        <div class="tabs-header" role="tablist" aria-label="Onglets produit">
+          <button
+            class="tab-btn"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'description'"
+            (click)="activeTab = 'description'"
+          >
+            Description détaillée
+          </button>
+          <button
+            class="tab-btn"
+            role="tab"
+            [attr.aria-selected]="activeTab === 'reviews'"
+            (click)="activeTab = 'reviews'"
+          >
+            Avis clients ({{ reviewStats.total }})
+          </button>
+        </div>
+
+        <div class="tabs-content">
+          <!-- Description Tab -->
+          <div *ngIf="activeTab === 'description'" class="tab-pane" role="tabpanel">
+            <div class="description-content">
+              <h3>Détails du produit</h3>
+              <p *ngFor="let paragraph of getDetailedDescriptionParagraphs(); trackBy: trackById">{{ paragraph }}</p>
+
+              <ng-container *ngFor="let section of getSpecificationSections(); trackBy: trackById">
+                <h3>{{ section.title }}</h3>
+                <ul class="features-list">
+                  <li *ngFor="let item of section.items; trackBy: trackById"><i class="pi pi-check-circle" aria-hidden="true"></i> {{ item }}</li>
+                </ul>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Reviews Tab -->
+          <div *ngIf="activeTab === 'reviews'" class="tab-pane" role="tabpanel">
+            <div class="reviews-summary">
+              <div class="rating-summary">
+                <div class="average-rating" aria-label="Moyenne des avis">
+                  <span class="rating-number">{{ reviewStats.average | number: '1.1-1' }}</span>
+                  <div class="stars" aria-hidden="true">
+                    <i class="pi pi-star-fill" *ngFor="let s of getStarsArray(roundRating(reviewStats.average)); trackBy: trackById"></i>
+                    <i class="pi pi-star" *ngFor="let s of getEmptyStarsArray(roundRating(reviewStats.average)); trackBy: trackById"></i>
+                  </div>
+                  <span class="total-reviews">Basé sur {{ reviewStats.total }} avis</span>
+                </div>
+                <div class="rating-distribution">
+                  <div class="distribution-bar" *ngFor="let rating of [5,4,3,2,1]; trackBy: trackById">
+                    <span class="rating-label">{{ rating }} étoiles</span>
+                    <div class="bar-container">
+                      <div class="bar-fill" [style.width.%]="getPercentageForRating(rating)"></div>
+                    </div>
+                    <span class="percentage">{{ getPercentageForRating(rating) | number: '1.0-0' }}%</span>
+                  </div>
+                </div>
+              </div>
+              <button class="write-review-btn" type="button" (click)="showReviewDialog = true">
+                <i class="pi pi-pencil" aria-hidden="true"></i>
+                Donner mon avis
+              </button>
+            </div>
+
+            <div class="reviews-list">
+              <article class="review-card" *ngFor="let review of reviews; trackBy: trackById">
+                <header class="review-header">
+                  <div class="reviewer-avatar reviewer-avatar-placeholder" aria-hidden="true">
+                    <i class="pi pi-user"></i>
+                  </div>
+                  <div class="reviewer-info">
+                    <div class="reviewer-name">
+                      {{ review.userName }}
+                      <span *ngIf="review.verified" class="verified-badge">
+                        <i class="pi pi-check-circle" aria-hidden="true"></i> Achat vérifié
+                      </span>
+                    </div>
+                    <div class="review-date">{{ formatDate(review.date) }}</div>
+                  </div>
+                  <div class="review-rating" aria-hidden="true">
+                    <i class="pi pi-star-fill" *ngFor="let s of getStarsArray(review.rating); trackBy: trackById"></i>
+                  </div>
+                </header>
+                <h4 *ngIf="review.title" class="review-title">{{ review.title }}</h4>
+                <p class="review-comment">{{ review.comment }}</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Related Products -->
+      <section *ngIf="relatedProducts.length > 0" class="related-products" aria-label="Produits similaires">
+        <h2 class="section-title">Produits similaires</h2>
+        <div class="related-products-grid">
+          <a class="related-product-card" *ngFor="let related of relatedProducts; trackBy: trackById" [routerLink]="['/product', related.id]">
+            <div class="product-image">
+              <img [src]="related.images[0]" [alt]="related.name" loading="lazy" decoding="async" />
+            </div>
+            <div class="product-info">
+              <h3>{{ related.name }}</h3>
+              <div class="product-price">
+                <span class="current-price">{{ (related.discountPrice || related.price) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              </div>
+              <p-rating [(ngModel)]="related.rating" [readonly]="true"></p-rating>
+            </div>
+          </a>
+        </div>
+      </section>
+    </div>
+  </main>
+</ng-container>
+
+<ng-template #loadingTpl>
   <div class="container">
     <div class="skeleton-wrapper">
       <div class="skeleton skeleton-back-button"></div>
@@ -321,7 +290,7 @@
       </div>
     </div>
   </div>
-}
+</ng-template>
 
 <!-- Zoom Modal -->
 <p-dialog
@@ -353,13 +322,14 @@
 >
   <div class="review-form">
     <div class="form-group">
-      <label>Note</label>
-      <p-rating [(ngModel)]="newReview.rating"></p-rating>
+      <label for="review-rating">Note</label>
+      <p-rating id="review-rating" [(ngModel)]="newReview.rating"></p-rating>
     </div>
 
     <div class="form-group">
-      <label>Titre de l'avis</label>
+      <label for="review-title">Titre de l'avis</label>
       <input
+        id="review-title"
         type="text"
         pInputText
         [(ngModel)]="newReview.title"
@@ -369,8 +339,9 @@
     </div>
 
     <div class="form-group">
-      <label>Votre avis</label>
+      <label for="review-comment">Votre avis</label>
       <textarea
+        id="review-comment"
         pInputTextarea
         [(ngModel)]="newReview.comment"
         rows="5"
@@ -381,17 +352,16 @@
   </div>
 
   <ng-template pTemplate="footer">
-    <button class="btn-secondary" (click)="showReviewDialog = false">Annuler</button>
-    <button class="btn-primary" (click)="submitReview()" [disabled]="isSubmittingReview">
-      @if (!isSubmittingReview) {
-        <i class="pi pi-send"></i>
-      }
-      @if (isSubmittingReview) {
-        <i class="pi pi-spin pi-spinner"></i>
-      }
+    <button class="btn-secondary" type="button" (click)="showReviewDialog = false">Annuler</button>
+    <button class="btn-primary" type="button" (click)="submitReview()" [disabled]="isSubmittingReview">
+      <ng-container *ngIf="!isSubmittingReview; else submittingTpl">
+        <i class="pi pi-send" aria-hidden="true"></i>
+      </ng-container>
+      <ng-template #submittingTpl>
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      </ng-template>
       Publier mon avis
     </button>
   </ng-template>
 </p-dialog>
 
-<!-- Loading Skeleton -->

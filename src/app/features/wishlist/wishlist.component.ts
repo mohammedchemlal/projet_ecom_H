@@ -296,4 +296,8 @@ export class WishlistComponent implements OnInit, OnDestroy {
       life: 3000
     });
   }
+
+  trackById(index: number, item: any): any {
+    return item?.id ?? index;
+  }
 }

@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:projet-ecom": "node dist/projet-ecom/server/server.mjs"
+    "serve:ssr:projet-ecom": "node dist/projet-ecom/server/server.mjs",
+    "generate:sitemap": "node tools/generate-sitemap.js"
   },
   "private": true,
   "packageManager": "npm@10.9.4",
@@ -27,6 +28,7 @@
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^21.1.5",
+    "puppeteer": "^24.40.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

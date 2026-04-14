@@ -113,9 +113,9 @@ export class AuthService {
     this.users = [
       {
         id: 1,
-        email: 'admin@valeriahouse.com',
+        email: 'admin@valeryahouse.com',
         password: 'Admin@123',
-        fullName: 'Admin ValeriaHouse',
+        fullName: 'Admin ValeryaHouse',
         address: 'Paris, France',
         phone: '+33123456789',
         role: 'admin',

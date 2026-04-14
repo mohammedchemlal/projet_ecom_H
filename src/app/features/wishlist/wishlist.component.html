@@ -70,7 +70,7 @@
 
       <!-- Wishlist Items Grid -->
       <div class="wishlist-grid">
-        <div *ngFor="let product of wishlistItems" class="wishlist-card">
+        <div *ngFor="let product of wishlistItems; trackBy: trackById" class="wishlist-card">
           <!-- Product Image -->
           <div class="product-image" (click)="viewProduct(product)">
             <img [src]="product.images[0]" [alt]="product.name" loading="lazy">
@@ -121,10 +121,10 @@
     </div>
 
     <!-- Recommended Products -->
-    <div class="recommended-section" *ngIf="!isEmpty()">
+      <div class="recommended-section" *ngIf="!isEmpty()">
       <h2 class="section-title">Vous pourriez aussi aimer</h2>
       <div class="recommended-grid">
-        <div *ngFor="let product of recommendedProducts" class="recommended-card">
+        <div *ngFor="let product of recommendedProducts; trackBy: trackById" class="recommended-card">
           <div class="product-image" [routerLink]="['/product', product.id]">
             <img [src]="product.images[0]" [alt]="product.name">
             <div class="discount-badge" *ngIf="product.isPromotion">

@@ -1,8 +1,8 @@
 <div class="auth-page">
   <div class="auth-container">
     <!-- Logo -->
-    <div class="auth-logo" routerLink="/home">
-      <span class="logo-text">ValeriaHouse <span class="accent">of Jewels</span></span>
+      <div class="auth-logo" routerLink="/home">
+      <span class="logo-text">ValeryaHouse <span class="accent">of Jewels</span></span>
     </div>
 
     <!-- Tabs -->
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Login Form -->
-    @if (activeTab === 'login') {
+    <ng-container *ngIf="activeTab === 'login'">
       <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth-form">
         <div class="form-group">
           <label for="login-email">
@@ -34,16 +34,10 @@
             placeholder="exemple@email.com"
             [class.ng-invalid]="loginForm.get('email')?.touched && loginForm.get('email')?.invalid"
           />
-          @if (loginForm.get('email')?.touched && loginForm.get('email')?.invalid) {
-            <div class="error-message">
-              @if (loginForm.get('email')?.errors?.['required']) {
-                <small>L'email est requis</small>
-              }
-              @if (loginForm.get('email')?.errors?.['email']) {
-                <small>Email invalide</small>
-              }
-            </div>
-          }
+          <div class="error-message" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid">
+            <small *ngIf="loginForm.get('email')?.errors?.['required']">L'email est requis</small>
+            <small *ngIf="loginForm.get('email')?.errors?.['email']">Email invalide</small>
+          </div>
         </div>
         <div class="form-group">
           <label for="login-password">
@@ -56,24 +50,16 @@
               id="login-password"
               formControlName="password"
               placeholder="Votre mot de passe"
-              [class.ng-invalid]="
-                loginForm.get('password')?.touched && loginForm.get('password')?.invalid
-              "
+              [class.ng-invalid]="loginForm.get('password')?.touched && loginForm.get('password')?.invalid"
             />
             <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
               <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
           </div>
-          @if (loginForm.get('password')?.touched && loginForm.get('password')?.invalid) {
-            <div class="error-message">
-              @if (loginForm.get('password')?.errors?.['required']) {
-                <small>Le mot de passe est requis</small>
-              }
-              @if (loginForm.get('password')?.errors?.['minlength']) {
-                <small>Minimum 6 caractères</small>
-              }
-            </div>
-          }
+          <div class="error-message" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.invalid">
+            <small *ngIf="loginForm.get('password')?.errors?.['required']">Le mot de passe est requis</small>
+            <small *ngIf="loginForm.get('password')?.errors?.['minlength']">Minimum 6 caractères</small>
+          </div>
         </div>
         <div class="form-options">
           <label class="checkbox-label">
@@ -85,19 +71,15 @@
           </a>
         </div>
         <button type="submit" class="submit-btn" [disabled]="isLoading">
-          @if (isLoading) {
-            <i class="pi pi-spin pi-spinner"></i>
-          }
-          @if (!isLoading) {
-            <i class="pi pi-sign-in"></i>
-          }
+          <i *ngIf="isLoading" class="pi pi-spin pi-spinner"></i>
+          <i *ngIf="!isLoading" class="pi pi-sign-in"></i>
           Se connecter
         </button>
       </form>
-    }
+    </ng-container>
 
     <!-- Register Form -->
-    @if (activeTab === 'register') {
+    <ng-container *ngIf="activeTab === 'register'">
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()" class="auth-form">
         <div class="form-group">
           <label for="register-name">
@@ -109,23 +91,13 @@
             id="register-name"
             formControlName="fullName"
             placeholder="Jean Dupont"
-            [class.ng-invalid]="
-              registerForm.get('fullName')?.touched && registerForm.get('fullName')?.invalid
-            "
+            [class.ng-invalid]="registerForm.get('fullName')?.touched && registerForm.get('fullName')?.invalid"
           />
-          @if (registerForm.get('fullName')?.touched && registerForm.get('fullName')?.invalid) {
-            <div class="error-message">
-              @if (registerForm.get('fullName')?.errors?.['required']) {
-                <small>Le nom est requis</small>
-              }
-              @if (registerForm.get('fullName')?.errors?.['minlength']) {
-                <small>Minimum 2 caractères</small>
-              }
-              @if (registerForm.get('fullName')?.errors?.['maxlength']) {
-                <small>Maximum 50 caractères</small>
-              }
-            </div>
-          }
+          <div class="error-message" *ngIf="registerForm.get('fullName')?.touched && registerForm.get('fullName')?.invalid">
+            <small *ngIf="registerForm.get('fullName')?.errors?.['required']">Le nom est requis</small>
+            <small *ngIf="registerForm.get('fullName')?.errors?.['minlength']">Minimum 2 caractères</small>
+            <small *ngIf="registerForm.get('fullName')?.errors?.['maxlength']">Maximum 50 caractères</small>
+          </div>
         </div>
         <div class="form-group">
           <label for="register-email">
@@ -137,20 +109,12 @@
             id="register-email"
             formControlName="email"
             placeholder="exemple@email.com"
-            [class.ng-invalid]="
-              registerForm.get('email')?.touched && registerForm.get('email')?.invalid
-            "
+            [class.ng-invalid]="registerForm.get('email')?.touched && registerForm.get('email')?.invalid"
           />
-          @if (registerForm.get('email')?.touched && registerForm.get('email')?.invalid) {
-            <div class="error-message">
-              @if (registerForm.get('email')?.errors?.['required']) {
-                <small>L'email est requis</small>
-              }
-              @if (registerForm.get('email')?.errors?.['email']) {
-                <small>Email invalide</small>
-              }
-            </div>
-          }
+          <div class="error-message" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+            <small *ngIf="registerForm.get('email')?.errors?.['required']">L'email est requis</small>
+            <small *ngIf="registerForm.get('email')?.errors?.['email']">Email invalide</small>
+          </div>
         </div>
         <div class="form-group">
           <label for="register-phone">
@@ -162,20 +126,12 @@
             id="register-phone"
             formControlName="phone"
             placeholder="+33 6 12 34 56 78"
-            [class.ng-invalid]="
-              registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid
-            "
+            [class.ng-invalid]="registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid"
           />
-          @if (registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid) {
-            <div class="error-message">
-              @if (registerForm.get('phone')?.errors?.['required']) {
-                <small>Le téléphone est requis</small>
-              }
-              @if (registerForm.get('phone')?.errors?.['pattern']) {
-                <small>Format invalide (ex: +33612345678)</small>
-              }
-            </div>
-          }
+          <div class="error-message" *ngIf="registerForm.get('phone')?.touched && registerForm.get('phone')?.invalid">
+            <small *ngIf="registerForm.get('phone')?.errors?.['required']">Le téléphone est requis</small>
+            <small *ngIf="registerForm.get('phone')?.errors?.['pattern']">Format invalide (ex: +33612345678)</small>
+          </div>
         </div>
         <div class="form-group">
           <label for="register-password">
@@ -188,102 +144,54 @@
               id="register-password"
               formControlName="password"
               placeholder="8+ caractères avec majuscule, chiffre, spécial"
-              [class.ng-invalid]="
-                registerForm.get('password')?.touched && registerForm.get('password')?.invalid
-              "
+              [class.ng-invalid]="registerForm.get('password')?.touched && registerForm.get('password')?.invalid"
             />
             <button type="button" class="toggle-password" (click)="togglePasswordVisibility()">
               <i [class]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
           </div>
           <!-- Password Strength Indicator -->
-          @if (registerForm.get('password')?.value) {
-            <div class="password-strength">
-              <div class="strength-bar">
-                <div
-                  class="strength-fill"
-                  [style.width]="getPasswordStrengthWidth()"
-                  [style.background]="getPasswordStrengthColor()"
-                ></div>
-              </div>
-              <span class="strength-text" [style.color]="getPasswordStrengthColor()">
-                Force: {{ getPasswordStrengthLabel() }}
-              </span>
+          <div *ngIf="registerForm.get('password')?.value" class="password-strength">
+            <div class="strength-bar">
+              <div
+                class="strength-fill"
+                [style.width]="getPasswordStrengthWidth()"
+                [style.background]="getPasswordStrengthColor()"
+              ></div>
             </div>
-          }
-          @if (registerForm.get('password')?.touched && registerForm.get('password')?.invalid) {
-            <div class="error-message">
-              @if (registerForm.get('password')?.errors?.['required']) {
-                <small>Le mot de passe est requis</small>
-              }
-              @if (registerForm.get('password')?.errors?.['minlength']) {
-                <small>Minimum 8 caractères</small>
-              }
-              @if (registerForm.get('password')?.errors?.['pattern']) {
-                <small> Doit contenir: majuscule, minuscule, chiffre, caractère spécial </small>
-              }
-            </div>
-          }
-          @if (registerForm.get('password')?.value && registerForm.get('password')?.invalid) {
-            <div class="password-requirements">
-              <ul>
-                <li [class.valid]="(registerForm.get('password')?.value || '').length >= 8">
-                  <i
-                    class="pi"
-                    [class.pi-check-circle]="
-                      (registerForm.get('password')?.value || '').length >= 8
-                    "
-                    [class.pi-times-circle]="(registerForm.get('password')?.value || '').length < 8"
-                  ></i>
-                  Au moins 8 caractères
-                </li>
-                <li [class.valid]="/[A-Z]/.test(registerForm.get('password')?.value || '')">
-                  <i
-                    class="pi"
-                    [class.pi-check-circle]="
-                      /[A-Z]/.test(registerForm.get('password')?.value || '')
-                    "
-                    [class.pi-times-circle]="
-                      !/[A-Z]/.test(registerForm.get('password')?.value || '')
-                    "
-                  ></i>
-                  Une majuscule
-                </li>
-                <li [class.valid]="/[a-z]/.test(registerForm.get('password')?.value || '')">
-                  <i
-                    class="pi"
-                    [class.pi-check-circle]="
-                      /[a-z]/.test(registerForm.get('password')?.value || '')
-                    "
-                    [class.pi-times-circle]="
-                      !/[a-z]/.test(registerForm.get('password')?.value || '')
-                    "
-                  ></i>
-                  Une minuscule
-                </li>
-                <li [class.valid]="/\d/.test(registerForm.get('password')?.value || '')">
-                  <i
-                    class="pi"
-                    [class.pi-check-circle]="/\d/.test(registerForm.get('password')?.value || '')"
-                    [class.pi-times-circle]="!/\d/.test(registerForm.get('password')?.value || '')"
-                  ></i>
-                  Un chiffre
-                </li>
-                <li [class.valid]="/[@$!%*?&]/.test(registerForm.get('password')?.value || '')">
-                  <i
-                    class="pi"
-                    [class.pi-check-circle]="
-                      /[@$!%*?&]/.test(registerForm.get('password')?.value || '')
-                    "
-                    [class.pi-times-circle]="
-                      !/[@$!%*?&]/.test(registerForm.get('password')?.value || '')
-                    "
-                  ></i>
-                  Un caractère spécial (@$!%*?&)
-                </li>
-              </ul>
-            </div>
-          }
+            <span class="strength-text" [style.color]="getPasswordStrengthColor()">
+              Force: {{ getPasswordStrengthLabel() }}
+            </span>
+          </div>
+          <div class="error-message" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+            <small *ngIf="registerForm.get('password')?.errors?.['required']">Le mot de passe est requis</small>
+            <small *ngIf="registerForm.get('password')?.errors?.['minlength']">Minimum 8 caractères</small>
+            <small *ngIf="registerForm.get('password')?.errors?.['pattern']">Doit contenir: majuscule, minuscule, chiffre, caractère spécial</small>
+          </div>
+          <div *ngIf="registerForm.get('password')?.value && registerForm.get('password')?.invalid" class="password-requirements">
+            <ul>
+              <li [class.valid]="(registerForm.get('password')?.value || '').length >= 8">
+                <i class="pi" [class.pi-check-circle]="(registerForm.get('password')?.value || '').length >= 8" [class.pi-times-circle]="(registerForm.get('password')?.value || '').length < 8"></i>
+                Au moins 8 caractères
+              </li>
+              <li [class.valid]="/[A-Z]/.test(registerForm.get('password')?.value || '')">
+                <i class="pi" [class.pi-check-circle]="/[A-Z]/.test(registerForm.get('password')?.value || '')" [class.pi-times-circle]="!/[A-Z]/.test(registerForm.get('password')?.value || '')"></i>
+                Une majuscule
+              </li>
+              <li [class.valid]="/[a-z]/.test(registerForm.get('password')?.value || '')">
+                <i class="pi" [class.pi-check-circle]="/[a-z]/.test(registerForm.get('password')?.value || '')" [class.pi-times-circle]="!/[a-z]/.test(registerForm.get('password')?.value || '')"></i>
+                Une minuscule
+              </li>
+              <li [class.valid]="/\d/.test(registerForm.get('password')?.value || '')">
+                <i class="pi" [class.pi-check-circle]="/\d/.test(registerForm.get('password')?.value || '')" [class.pi-times-circle]="!/\d/.test(registerForm.get('password')?.value || '')"></i>
+                Un chiffre
+              </li>
+              <li [class.valid]="/[@$!%*?&]/.test(registerForm.get('password')?.value || '')">
+                <i class="pi" [class.pi-check-circle]="/[@$!%*?&]/.test(registerForm.get('password')?.value || '')" [class.pi-times-circle]="!/[@$!%*?&]/.test(registerForm.get('password')?.value || '')"></i>
+                Un caractère spécial (@$!%*?&)
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="form-group">
           <label for="register-confirm-password">
@@ -296,77 +204,44 @@
               id="register-confirm-password"
               formControlName="confirmPassword"
               placeholder="Confirmez votre mot de passe"
-              [class.ng-invalid]="
-                registerForm.get('confirmPassword')?.touched &&
-                (registerForm.get('confirmPassword')?.invalid ||
-                  registerForm.errors?.['passwordMismatch'])
-              "
+              [class.ng-invalid]="registerForm.get('confirmPassword')?.touched && (registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['passwordMismatch'])"
             />
-            <button
-              type="button"
-              class="toggle-password"
-              (click)="toggleConfirmPasswordVisibility()"
-            >
+            <button type="button" class="toggle-password" (click)="toggleConfirmPasswordVisibility()">
               <i [class]="showConfirmPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
             </button>
           </div>
-          @if (
-            registerForm.get('confirmPassword')?.touched &&
-            (registerForm.get('confirmPassword')?.invalid ||
-              registerForm.errors?.['passwordMismatch'])
-          ) {
-            <div class="error-message">
-              @if (registerForm.get('confirmPassword')?.errors?.['required']) {
-                <small>La confirmation est requise</small>
-              }
-              @if (registerForm.errors?.['passwordMismatch']) {
-                <small>Les mots de passe ne correspondent pas</small>
-              }
-            </div>
-          }
+          <div class="error-message" *ngIf="registerForm.get('confirmPassword')?.touched && (registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['passwordMismatch'])">
+            <small *ngIf="registerForm.get('confirmPassword')?.errors?.['required']">La confirmation est requise</small>
+            <small *ngIf="registerForm.errors?.['passwordMismatch']">Les mots de passe ne correspondent pas</small>
+          </div>
         </div>
         <div class="form-group">
           <label class="checkbox-label terms">
             <input type="checkbox" formControlName="acceptTerms" />
-            <span
-              >J'accepte les <a href="javascript:void(0)">conditions générales</a> et la
-              <a href="javascript:void(0)">politique de confidentialité</a></span
-            >
+            <span>J'accepte les <a href="javascript:void(0)">conditions générales</a> et la <a href="javascript:void(0)">politique de confidentialité</a></span>
           </label>
-          @if (
-            registerForm.get('acceptTerms')?.touched && registerForm.get('acceptTerms')?.invalid
-          ) {
-            <div class="error-message">
-              <small>Vous devez accepter les conditions</small>
-            </div>
-          }
+          <div class="error-message" *ngIf="registerForm.get('acceptTerms')?.touched && registerForm.get('acceptTerms')?.invalid">
+            <small>Vous devez accepter les conditions</small>
+          </div>
         </div>
         <button type="submit" class="submit-btn" [disabled]="isLoading">
-          @if (isLoading) {
-            <i class="pi pi-spin pi-spinner"></i>
-          }
-          @if (!isLoading) {
-            <i class="pi pi-user-plus"></i>
-          }
+          <i *ngIf="isLoading" class="pi pi-spin pi-spinner"></i>
+          <i *ngIf="!isLoading" class="pi pi-user-plus"></i>
           S'inscrire
         </button>
       </form>
-    }
+    </ng-container>
 
     <!-- Additional Info -->
     <div class="auth-footer">
-      @if (activeTab === 'login') {
-        <p>
-          Pas encore de compte ?
-          <a href="javascript:void(0)" (click)="activeTab = 'register'">Créer un compte</a>
-        </p>
-      }
-      @if (activeTab === 'register') {
-        <p>
-          Déjà un compte ?
-          <a href="javascript:void(0)" (click)="activeTab = 'login'">Se connecter</a>
-        </p>
-      }
+      <p *ngIf="activeTab === 'login'">
+        Pas encore de compte ?
+        <a href="javascript:void(0)" (click)="activeTab = 'register'">Créer un compte</a>
+      </p>
+      <p *ngIf="activeTab === 'register'">
+        Déjà un compte ?
+        <a href="javascript:void(0)" (click)="activeTab = 'login'">Se connecter</a>
+      </p>
     </div>
 
     <!-- Trust Badges -->

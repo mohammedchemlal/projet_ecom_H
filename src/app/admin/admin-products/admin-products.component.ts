@@ -20,6 +20,7 @@ import { map } from 'rxjs';
 
 import { CategoryService } from '../../core/services/category.service';
 import { ProductService } from '../../core/services/product.service';
+import { AdminRefreshService } from '../../core/services/admin-refresh.service';
 import { ConfirmationService } from 'primeng/api';
 import type { Product, ProductSpecificationSection } from '../../shared/models/product.model';
 import type { CategoryOption } from '../../core/services/category.service';
@@ -50,11 +51,13 @@ export class AdminProductsComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
+  private readonly adminRefresh = inject(AdminRefreshService);
   private readonly categoryService = inject(CategoryService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
-  readonly products = toSignal(this.productService.getProducts(), { initialValue: [] as Product[] });
+  // Use the service's products$ BehaviorSubject so updates propagate automatically
+  readonly products = toSignal(this.productService.products$, { initialValue: [] as Product[] });
   readonly categories = toSignal(this.categoryService.getCategories(), { initialValue: [] as CategoryOption[] });
   readonly dialogVisible = signal(false);
   readonly quickEditorVisible = signal(false);
@@ -183,6 +186,7 @@ export class AdminProductsComponent {
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit modifié.' });
           this.dialogVisible.set(false);
+          this.adminRefresh.notify('products');
         },
         error: (error: Error) => {
           this.handleRequestError(error);
@@ -193,6 +197,7 @@ export class AdminProductsComponent {
         next: () => {
           this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit créé.' });
           this.dialogVisible.set(false);
+          this.adminRefresh.notify('products');
         },
         error: (error: Error) => {
           this.handleRequestError(error);
@@ -212,6 +217,7 @@ export class AdminProductsComponent {
         this.productService.deleteProduct(product.id).subscribe({
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Produit supprimé.' });
+            this.adminRefresh.notify('products');
           },
           error: (error: Error) => {
             this.handleRequestError(error);
@@ -229,6 +235,7 @@ export class AdminProductsComponent {
           summary: 'Succès',
           detail: `Produit ${product.isActive ? 'activé' : 'désactivé'}`
         });
+        this.adminRefresh.notify('products');
       },
       error: (error: Error) => {
         this.handleRequestError(error);
@@ -291,6 +298,7 @@ export class AdminProductsComponent {
           this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Contenu détaillé mis à jour.' });
           this.quickEditorVisible.set(false);
           this.quickEditorProduct.set(null);
+          this.adminRefresh.notify('products');
         },
         error: (error: Error) => {
           this.handleRequestError(error);

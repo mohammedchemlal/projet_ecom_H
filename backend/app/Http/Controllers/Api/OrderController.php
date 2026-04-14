@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\PromoCode;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -93,18 +97,138 @@ class OrderController extends Controller
             $targetUserId = $user->id;
         }
 
-        $order = Order::create([
-            'user_id' => $targetUserId,
-            'items' => $this->normalizeItems($validated['items'] ?? []),
-            'total' => $validated['total'],
-            'discount_amount' => $validated['discount_amount'] ?? 0,
-            'promo_code' => $validated['promo_code'] ?? null,
-            'status' => $validated['status'] ?? 'pending',
-            'address' => $validated['address'],
-            'phone' => $validated['phone'],
-        ]);
+        $items = $this->normalizeItems($validated['items'] ?? []);
 
-        return response()->json($this->transformOrder($order), 201);
+        // compute subtotal from normalized items (use discount_price if present)
+        $subtotal = array_reduce($items, function ($carry, $item) {
+            $price = $item['product']['discount_price'] ?? $item['product']['price'] ?? 0;
+            return $carry + ($price * ($item['quantity'] ?? 1));
+        }, 0.0);
+
+        $discountAmount = $validated['discount_amount'] ?? 0;
+        $promo = null;
+        $promoCode = isset($validated['promo_code']) ? strtoupper(trim((string) $validated['promo_code'])) : null;
+
+        if ($promoCode !== null) {
+            $promo = PromoCode::query()->where('code', $promoCode)->first();
+
+            if ($promo === null) {
+                return response()->json(['message' => 'Code promo invalide.'], 422);
+            }
+
+            $now = now();
+            if (! $promo->is_active || $promo->valid_from > $now || $promo->valid_to < $now) {
+                return response()->json(['message' => 'Code promo expiré ou inactif.'], 422);
+            }
+
+            if ($promo->usage_limit !== null && $promo->used_count >= $promo->usage_limit) {
+                return response()->json(['message' => 'Ce code promo a atteint sa limite d\'utilisation.'], 422);
+            }
+
+            if ($promo->min_order_amount !== null && $subtotal < $promo->min_order_amount) {
+                return response()->json(['message' => 'Montant minimum non atteint pour ce code promo.'], 422);
+            }
+
+            // calculate discount server-side
+            if ($promo->type === 'fixed') {
+                $calculated = min($subtotal, (float) $promo->discount);
+            } else {
+                $calculated = ($subtotal * (float) $promo->discount) / 100.0;
+                if ($promo->max_discount !== null) {
+                    $calculated = min($calculated, (float) $promo->max_discount);
+                }
+            }
+
+            // round to 3 decimals to match frontend precision
+            $discountAmount = round($calculated, 3);
+        }
+
+        // Create order and decrement product stock within a DB transaction to avoid races
+        DB::beginTransaction();
+
+        try {
+            // Lock relevant product rows for update
+            $productIds = collect($items)->map(fn($it) => (int) $it['product_id'])->unique()->values()->all();
+            $productsForUpdate = Product::query()->whereIn('id', $productIds)->lockForUpdate()->get()->keyBy('id');
+
+            // Verify stock availability
+            foreach ($items as $it) {
+                $pid = (int) $it['product_id'];
+                $qty = (int) ($it['quantity'] ?? 1);
+                $prod = $productsForUpdate->get($pid);
+
+                if ($prod === null) {
+                    DB::rollBack();
+                    return response()->json(['message' => "Produit introuvable: {$pid}"], 422);
+                }
+
+                // Check if product is active/available
+                if (property_exists($prod, 'is_active') && ! $prod->is_active) {
+                    DB::rollBack();
+                    return response()->json(['message' => "Le produit {$prod->name} n'est plus disponible."], 422);
+                }
+
+                if ($prod->stock < $qty) {
+                    DB::rollBack();
+                    return response()->json(['message' => "Stock insuffisant pour le produit {$prod->name}."], 422);
+                }
+            }
+
+            // Decrement stock
+            foreach ($items as $it) {
+                $pid = (int) $it['product_id'];
+                $qty = (int) ($it['quantity'] ?? 1);
+                $prod = $productsForUpdate->get($pid);
+                $prod->stock = max(0, $prod->stock - $qty);
+                $prod->save();
+            }
+
+            $order = Order::create([
+                'user_id' => $targetUserId,
+                'items' => $items,
+                'total' => $validated['total'],
+                'discount_amount' => $discountAmount,
+                'promo_code' => $promoCode,
+                'status' => $validated['status'] ?? 'pending',
+                'address' => $validated['address'],
+                'phone' => $validated['phone'],
+            ]);
+
+            // increment used_count safely
+            if (! empty($promo) && $promo instanceof PromoCode) {
+                if ($promo->usage_limit === null || $promo->used_count < $promo->usage_limit) {
+                    $promo->increment('used_count');
+                }
+            }
+
+            DB::commit();
+
+            // Prepare customer info (if any) and queue notification email to site owner / admin
+            try {
+                $adminEmails = env('ADMIN_EMAIL', config('mail.from.address'));
+                $customer = null;
+                if (! empty($order->user_id)) {
+                    $customer = User::query()->find($order->user_id);
+                }
+
+                if (! empty($adminEmails)) {
+                    // allow comma-separated list in ADMIN_EMAIL
+                    $recipients = array_filter(array_map('trim', explode(',', (string) $adminEmails)));
+                    if (! empty($recipients)) {
+                        // queue the mailable so the API is not blocked; Mailable uses Queueable
+                        Mail::to($recipients)->queue(new \App\Mail\OrderPlaced($order, $customer));
+                    }
+                }
+            } catch (\Throwable $mailEx) {
+                // don't break the API response if queue fails — log for diagnostics
+                logger()->error('Failed to queue order notification email: '.$mailEx->getMessage());
+            }
+
+            return response()->json($this->transformOrder($order), 201);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Erreur lors de la creation de la commande.'], 500);
+        }
     }
 
     public function update(Request $request, Order $order): JsonResponse
@@ -114,6 +238,39 @@ class OrderController extends Controller
         $validated = $request->validate([
             'status' => ['required', Rule::in(['pending', 'confirmed', 'delivered'])],
         ]);
+
+        // If changing status to confirmed, verify products are still available
+        if (($validated['status'] ?? '') === 'confirmed') {
+            $items = $this->normalizeItems($order->items ?? []);
+            $productIds = collect($items)->map(fn($it) => (int) $it['product_id'])->unique()->values()->all();
+            $products = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
+
+            $errors = [];
+            foreach ($items as $it) {
+                $pid = (int) $it['product_id'];
+                $qty = (int) ($it['quantity'] ?? 1);
+                $prod = $products->get($pid);
+
+                if ($prod === null) {
+                    $errors[] = "Produit introuvable: {$pid}";
+                    continue;
+                }
+
+                if (property_exists($prod, 'is_active') && ! $prod->is_active) {
+                    $errors[] = "Le produit {$prod->name} n'est plus disponible.";
+                    continue;
+                }
+
+                if ($prod->stock < $qty) {
+                    $errors[] = "Stock insuffisant pour le produit {$prod->name}.";
+                    continue;
+                }
+            }
+
+            if (! empty($errors)) {
+                return response()->json(['message' => implode(' ', $errors)], 422);
+            }
+        }
 
         $order->update([
             'status' => $validated['status'],

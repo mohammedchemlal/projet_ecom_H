@@ -1,10 +1,11 @@
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
-import { RouterLink } from '@angular/router';
+// RouterLink intentionally omitted from imports when unused in template
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { PaginatorModule } from 'primeng/paginator';
@@ -29,7 +30,6 @@ interface ProductFilterCategory {
   imports: [
     ButtonModule,
     CommonModule,
-    CurrencyPipe,
     DrawerModule,
     FormsModule,
     PaginatorModule,
@@ -164,16 +164,21 @@ export class ProductListComponent implements OnInit, OnDestroy {
       filters.isPromotion = true;
     }
 
-    this.productService.getProductsWithFilters(filters).subscribe(products => {
+    // Include pagination params for server-side pagination
+    filters.page = this.currentPage;
+    filters.perPage = this.itemsPerPage;
+
+    this.productService.getProductsWithFilters(filters).subscribe(result => {
+      const products = result.products;
       this.products = products;
       if (products.length > 0) {
         const allPrices = products.map(p => p.discountPrice || p.price);
         this.maxPrice = Math.max(...allPrices);
       }
       this.updateCategoryCounts();
-      this.totalProducts = this.products.length;
-      // Apply client-side pagination
-      this.filteredProducts = this.paginateProducts(this.products);
+      this.totalProducts = result.total;
+      // Server already returns the requested page
+      this.filteredProducts = products;
       this.isLoading = false;
     });
   }
@@ -206,7 +211,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   onPageChange(event: any) {
     this.currentPage = event.page + 1;
-    this.loadProducts(); // Load with the new page number directly
+    this.applyFilters(); // applyFilters calls loadProducts which includes page param
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -292,5 +297,16 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   getCategoryLabel(categoryValue: string): string {
     return this.categories.find((category) => category.value === categoryValue)?.label ?? categoryValue;
+  }
+
+  // trackBy helpers for ngFor performance
+  trackById(index: number, item: any) {
+    if (!item) return index;
+    return item.id ?? item.product?.id ?? index;
+  }
+
+  trackByValue(index: number, item: any) {
+    if (!item) return index;
+    return item.value ?? item ?? index;
   }
 }

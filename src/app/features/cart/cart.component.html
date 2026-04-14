@@ -16,7 +16,7 @@
     </div>
 
     <!-- Empty Cart -->
-    @if (isEmpty() && !isLoading) {
+    <ng-container *ngIf="isEmpty() && !isLoading">
       <div class="empty-cart">
         <i class="pi pi-shopping-cart"></i>
         <h2>Votre panier est vide</h2>
@@ -26,10 +26,10 @@
           Découvrir nos produits
         </button>
       </div>
-    }
+    </ng-container>
 
     <!-- Cart Content -->
-    @if (!isEmpty() && !isLoading) {
+    <ng-container *ngIf="!isEmpty() && !isLoading">
       <div class="cart-content">
         <div class="cart-main">
           <!-- Cart Items Header -->
@@ -42,96 +42,88 @@
           </div>
           <!-- Cart Items List -->
           <div class="cart-items">
-            @for (item of cartItems; track item) {
-              <div class="cart-item">
-                <div class="col-product">
-                  <div class="product-info">
-                    <div class="product-image" [routerLink]="['/product', item.product.id]">
-                      <img [src]="item.product.images[0]" [alt]="item.product.name" />
-                      @if (item.product.isPromotion) {
-                        <div class="discount-badge">
-                          -{{ getDiscountPercentage(item.product) }}%
-                        </div>
-                      }
+            <div *ngFor="let item of cartItems; trackBy: trackById" class="cart-item">
+              <div class="col-product">
+                <div class="product-info">
+                  <div class="product-image" [routerLink]="['/product', item.product.id]">
+                    <img [src]="item.product.images[0]" [alt]="item.product.name" />
+                    <div *ngIf="item.product.isPromotion" class="discount-badge">
+                      -{{ getDiscountPercentage(item.product) }}%
                     </div>
-                    <div class="product-details">
-                      <h3 class="product-name" [routerLink]="['/product', item.product.id]">
-                        {{ item.product.name }}
-                      </h3>
-                      <div class="product-rating">
-                        <p-rating [(ngModel)]="item.product.rating" [readonly]="true"></p-rating>
-                        <span class="review-count">({{ item.product.reviewCount }})</span>
-                      </div>
-                      <div class="product-stock" [class.low-stock]="item.product.stock <= 5">
-                        <i
-                          class="pi"
-                          [class.pi-check-circle]="item.product.stock > 5"
-                          [class.pi-exclamation-triangle]="item.product.stock <= 5"
-                        ></i>
-                        {{
-                          item.product.stock > 10
-                            ? 'En stock'
-                            : 'Plus que ' + item.product.stock + ' en stock'
-                        }}
-                      </div>
+                  </div>
+                  <div class="product-details">
+                    <h3 class="product-name" [routerLink]="['/product', item.product.id]">
+                      {{ item.product.name }}
+                    </h3>
+                    <div class="product-rating">
+                      <p-rating [(ngModel)]="item.product.rating" [readonly]="true"></p-rating>
+                      <span class="review-count">({{ item.product.reviewCount }})</span>
+                    </div>
+                    <div class="product-stock" [class.low-stock]="item.product.stock <= 5">
+                      <i
+                        class="pi"
+                        [class.pi-check-circle]="item.product.stock > 5"
+                        [class.pi-exclamation-triangle]="item.product.stock <= 5"
+                      ></i>
+                      {{
+                        item.product.stock > 10
+                          ? 'En stock'
+                          : 'Plus que ' + item.product.stock + ' en stock'
+                      }}
                     </div>
                   </div>
                 </div>
-                <div class="col-price">
-                  <div class="price-info">
-                    <span class="current-price">{{
-                      getDiscountedPrice(item.product) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
-                    }}</span>
-                    @if (item.product.discountPrice) {
-                      <span class="original-price">
-                        {{ item.product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}
-                      </span>
-                    }
-                  </div>
+              </div>
+              <div class="col-price">
+                <div class="price-info">
+                  <span class="current-price">{{ getDiscountedPrice(item.product) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                  <span *ngIf="item.product.discountPrice" class="original-price">
+                    {{ item.product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}
+                  </span>
                 </div>
-                <div class="col-quantity">
-                  <div class="quantity-controls">
-                    <button
-                      class="qty-btn"
-                      (click)="updateQuantity(item, item.quantity - 1)"
-                      [disabled]="item.quantity <= 1"
-                    >
-                      <i class="pi pi-minus"></i>
-                    </button>
-                    <input
-                      type="number"
-                      [(ngModel)]="item.quantity"
-                      (change)="updateQuantity(item, item.quantity)"
-                      min="1"
-                      [max]="item.product.stock"
-                      class="quantity-input"
-                    />
-                    <button
-                      class="qty-btn"
-                      (click)="updateQuantity(item, item.quantity + 1)"
-                      [disabled]="item.quantity >= item.product.stock"
-                    >
-                      <i class="pi pi-plus"></i>
-                    </button>
-                  </div>
-                </div>
-                <div class="col-total">
-                  <span class="item-total">{{ getItemTotal(item) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-                </div>
-                <div class="col-actions">
+              </div>
+              <div class="col-quantity">
+                <div class="quantity-controls">
                   <button
-                    class="action-btn move-to-wishlist"
-                    (click)="moveToWishlist(item)"
-                    title="Déplacer vers favoris"
+                    class="qty-btn"
+                    (click)="updateQuantity(item, item.quantity - 1)"
+                    [disabled]="item.quantity <= 1"
                   >
-                    <i class="pi pi-heart"></i>
+                    <i class="pi pi-minus"></i>
                   </button>
-                  <button class="action-btn remove" (click)="removeItem(item)" title="Supprimer">
-                    <i class="pi pi-trash"></i>
+                  <input
+                    type="number"
+                    [(ngModel)]="item.quantity"
+                    (change)="updateQuantity(item, item.quantity)"
+                    min="1"
+                    [max]="item.product.stock"
+                    class="quantity-input"
+                  />
+                  <button
+                    class="qty-btn"
+                    (click)="updateQuantity(item, item.quantity + 1)"
+                    [disabled]="item.quantity >= item.product.stock"
+                  >
+                    <i class="pi pi-plus"></i>
                   </button>
                 </div>
               </div>
-            }
+              <div class="col-total">
+                <span class="item-total">{{ getItemTotal(item) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              </div>
+              <div class="col-actions">
+                <button
+                  class="action-btn move-to-wishlist"
+                  (click)="moveToWishlist(item)"
+                  title="Déplacer vers favoris"
+                >
+                  <i class="pi pi-heart"></i>
+                </button>
+                <button class="action-btn remove" (click)="removeItem(item)" title="Supprimer">
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </div>
           </div>
           <!-- Continue Shopping Link -->
           <div class="continue-shopping">
@@ -150,12 +142,10 @@
               <span>Sous-total</span>
               <span>{{ getSubtotal() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
             </div>
-            @if (getDiscountAmount() > 0) {
-              <div class="summary-row">
-                <span>Réduction</span>
-                <span class="discount">-{{ getDiscountAmount() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-              </div>
-            }
+            <div *ngIf="getDiscountAmount() > 0" class="summary-row">
+              <span>Réduction</span>
+              <span class="discount">-{{ getDiscountAmount() | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            </div>
             <div class="summary-row">
               <span>Livraison</span>
               <span class="free-shipping">Gratuite</span>
@@ -173,51 +163,45 @@
           <!-- Promo Code -->
           <div class="promo-card">
             <h3>Code promo</h3>
-            @if (!appliedPromo) {
-              <div class="promo-input-group">
-                <input
-                  type="text"
-                  [(ngModel)]="promoCode"
-                  placeholder="Entrez votre code"
-                  class="promo-input"
-                  (keyup.enter)="applyPromoCode()"
-                />
-                <button class="apply-btn" (click)="applyPromoCode()" [disabled]="isApplyingPromo">
-                  @if (!isApplyingPromo) {
-                    <i class="pi pi-ticket"></i>
-                  }
-                  @if (isApplyingPromo) {
-                    <i class="pi pi-spin pi-spinner"></i>
-                  }
-                  Appliquer
-                </button>
-              </div>
-            }
-            @if (appliedPromo) {
-              <div class="applied-promo">
-                <div class="promo-badge">
+            <div *ngIf="!appliedPromo" class="promo-input-group">
+              <input
+                type="text"
+                [(ngModel)]="promoCode"
+                placeholder="Entrez votre code"
+                class="promo-input"
+                (keyup.enter)="applyPromoCode()"
+              />
+              <button class="apply-btn" (click)="applyPromoCode()" [disabled]="isApplyingPromo">
+                <ng-container *ngIf="!isApplyingPromo">
                   <i class="pi pi-ticket"></i>
-                  <span>{{ appliedPromo.code }}</span>
-                  <span class="discount-value">
-                    -{{ appliedPromo.type === 'fixed' ? (appliedPromo.discount | currency:'MAD':'symbol':'1.0-0':'fr-MA') : (appliedPromo.discount + '%') }}
-                  </span>
-                </div>
-                <button class="remove-promo" (click)="removePromoCode()">
-                  <i class="pi pi-times"></i>
-                </button>
+                </ng-container>
+                <ng-container *ngIf="isApplyingPromo">
+                  <i class="pi pi-spin pi-spinner"></i>
+                </ng-container>
+                Appliquer
+              </button>
+            </div>
+            <div *ngIf="appliedPromo" class="applied-promo">
+              <div class="promo-badge">
+                <i class="pi pi-ticket"></i>
+                <span>{{ appliedPromo.code }}</span>
+                <span class="discount-value">
+                  -{{ appliedPromo.type === 'fixed' ? (appliedPromo.discount | currency:'MAD':'symbol':'1.0-0':'fr-MA') : (appliedPromo.discount + '%') }}
+                </span>
               </div>
-            }
+              <button class="remove-promo" (click)="removePromoCode()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
           </div>
           <!-- Payment Methods -->
           <div class="payment-card">
             <h3>Paiement à la livraison</h3>
             <div class="payment-methods">
-              @for (method of paymentMethods; track method) {
-                <div class="payment-method" [class.active]="selectedPaymentMethod === method.value">
-                  <i [class]="'pi ' + method.icon"></i>
-                  <span>{{ method.label }}</span>
-                </div>
-              }
+              <div *ngFor="let method of paymentMethods" class="payment-method" [class.active]="selectedPaymentMethod === method.value">
+                <i [class]="'pi ' + method.icon"></i>
+                <span>{{ method.label }}</span>
+              </div>
             </div>
             <div class="security-badge">
               <i class="pi pi-wallet"></i>
@@ -226,45 +210,37 @@
           </div>
         </div>
       </div>
-    }
+    </ng-container>
 
     <!-- Recommended Products -->
-    @if (!isEmpty()) {
+    <ng-container *ngIf="!isEmpty()">
       <div class="recommended-section">
         <h2 class="section-title">Vous pourriez aussi aimer</h2>
         <div class="recommended-grid">
-          @for (product of recommendedProducts; track product) {
-            <div class="recommended-card">
-              <div class="product-image" [routerLink]="['/product', product.id]">
-                <img [src]="product.images[0]" [alt]="product.name" />
-                @if (product.isPromotion) {
-                  <div class="discount-badge">-{{ getDiscountPercentage(product) }}%</div>
-                }
-              </div>
-              <div class="product-info">
-                <h3 [routerLink]="['/product', product.id]">{{ product.name }}</h3>
-                <div class="product-price">
-                  <span class="current-price">{{
-                    getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
-                  }}</span>
-                  @if (product.discountPrice) {
-                    <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-                  }
-                </div>
-                <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
-                <button class="add-to-cart-btn" (click)="addToCart(product)">
-                  <i class="pi pi-shopping-cart"></i>
-                  Ajouter
-                </button>
-              </div>
+          <div *ngFor="let product of recommendedProducts; trackBy: trackById" class="recommended-card">
+            <div class="product-image" [routerLink]="['/product', product.id]">
+              <img [src]="product.images[0]" [alt]="product.name" />
+              <div *ngIf="product.isPromotion" class="discount-badge">-{{ getDiscountPercentage(product) }}%</div>
             </div>
-          }
+            <div class="product-info">
+              <h3 [routerLink]="['/product', product.id]">{{ product.name }}</h3>
+              <div class="product-price">
+                <span class="current-price">{{ getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                <span *ngIf="product.discountPrice" class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              </div>
+              <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+              <button class="add-to-cart-btn" (click)="addToCart(product)">
+                <i class="pi pi-shopping-cart"></i>
+                Ajouter
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    }
+    </ng-container>
 
     <!-- Trust Badges -->
-    @if (!isEmpty()) {
+    <ng-container *ngIf="!isEmpty()">
       <div class="trust-badges">
         <div class="trust-item">
           <i class="pi pi-truck"></i>
@@ -281,24 +257,22 @@
           </div>
         </div>
       </div>
-    }
+    </ng-container>
   </div>
 </div>
 
 <!-- Loading Skeleton -->
-@if (isLoading) {
+<ng-container *ngIf="isLoading">
   <div class="loading-skeleton">
     <div class="container">
       <div class="skeleton-cart-header"></div>
-      @for (_ of [1, 2, 3]; track _) {
-        <div class="skeleton-cart-item">
-          <div class="skeleton-image"></div>
-          <div class="skeleton-details">
-            <div class="skeleton-text"></div>
-            <div class="skeleton-text short"></div>
-          </div>
+      <div *ngFor="let _ of [1,2,3]" class="skeleton-cart-item">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-details">
+          <div class="skeleton-text"></div>
+          <div class="skeleton-text short"></div>
         </div>
-      }
+      </div>
     </div>
   </div>
-}
+</ng-container>

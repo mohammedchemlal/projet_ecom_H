@@ -3,67 +3,83 @@
   <div class="container px-3 md:px-5">
     <div class="header-content flex align-items-center justify-content-between gap-3">
       <!-- Logo -->
-      <div class="logo flex align-items-center gap-2" routerLink="/home" aria-label="Aller à l'accueil">
-        @if (!logoLoadFailed) {
-          <img
-            src="/favicon.ico"
-            alt="Valeria House of Jewels"
-            class="logo-img"
-            decoding="async"
-            loading="eager"
-            (error)="logoLoadFailed = true"
-          />
-        }
-        <span class="logo-text">
-          <span class="brand">Valeria</span>
+      <div class="logo flex align-items-center gap-2 order-logo" routerLink="/home" aria-label="Aller à l'accueil">
+        <button #mobileBtn class="mobile-menu-btn" type="button" aria-label="Ouvrir le menu" (click)="toggleMobileMenu()">
+          <i class="pi pi-bars" aria-hidden="true"></i>
+        </button>
+          <span class="logo-text">
+          <span class="brand">Valerya</span>
           <span class="tagline">House of Jewels</span>
         </span>
       </div>
 
       <!-- Desktop Navigation -->
-      <div class="desktop-nav flex-1">
+      <div class="desktop-nav flex-1 order-menu">
         <p-menubar [model]="items" class="custom-menubar"></p-menubar>
       </div>
 
       <!-- Actions -->
-      <div class="header-actions flex align-items-center gap-2">
-        <button class="action-btn" (click)="showSearchBar = !showSearchBar">
-          <i class="pi pi-search"></i>
+      <div class="header-actions flex align-items-center gap-2" role="toolbar" aria-label="Actions du site">
+        <button class="action-btn" type="button" aria-label="Rechercher" (click)="showSearchBar = !showSearchBar">
+          <i class="pi pi-search" aria-hidden="true"></i>
         </button>
-        <button class="action-btn" (click)="goToWishlist()">
-          <i class="pi pi-heart"></i>
-          @if (wishlistCount > 0) {
-            <span class="badge">{{ wishlistCount }}</span>
-          }
+
+        <button class="action-btn" type="button" aria-label="Favoris" (click)="goToWishlist()">
+          <i class="pi pi-heart" aria-hidden="true"></i>
+          <span *ngIf="wishlistCount > 0" class="badge" aria-live="polite">{{ wishlistCount }}</span>
         </button>
-        <button class="action-btn cart-btn" (click)="goToCart()">
-          <i class="pi pi-shopping-bag"></i>
-          @if (cartCount > 0) {
-            <span class="badge">{{ cartCount }}</span>
-          }
+
+        <button class="action-btn cart-btn" type="button" aria-label="Panier" (click)="goToCart()">
+          <i class="pi pi-shopping-bag" aria-hidden="true"></i>
+          <span *ngIf="cartCount > 0" class="badge" aria-live="polite">{{ cartCount }}</span>
         </button>
-        <p-splitButton
-          label=""
-          [model]="userMenu"
-          icon="pi pi-user"
-          styleClass="user-btn"
-        ></p-splitButton>
+
+        <!-- User dropdown: show avatar + name when logged -->
+        <div class="user-dropdown">
+          <button class="user-btn" type="button" (click)="toggleUserMenu()" [attr.aria-expanded]="userMenuVisible" aria-haspopup="true">
+            <span class="avatar" *ngIf="currentUser; else iconTpl">{{ getInitials(currentUser.fullName) }}</span>
+            <ng-template #iconTpl><i class="pi pi-user"></i></ng-template>
+            <span class="user-name" *ngIf="currentUser">{{ currentUser.fullName }}</span>
+            <i class="pi pi-chevron-down"></i>
+          </button>
+
+          <ul class="user-menu" *ngIf="userMenuVisible">
+            <li *ngFor="let entry of userMenu">
+              <ng-container *ngIf="entry.separator; else itemTpl">
+                <hr class="menu-separator" />
+              </ng-container>
+              <ng-template #itemTpl>
+                <button type="button" class="menu-item" (click)="handleUserMenuEntry(entry)">
+                  <i *ngIf="entry.icon" [class]="entry.icon"></i>
+                  {{ entry.label }}
+                </button>
+              </ng-template>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="search-bar" [class.active]="showSearchBar">
-      <div class="search-container flex align-items-center gap-2">
-        <i class="pi pi-search search-icon"></i>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          (keyup.enter)="search()"
-          placeholder="Rechercher un produit..."
-          class="search-input"
-        />
-        <button class="search-btn" (click)="search()">Rechercher</button>
-      </div>
+    <div class="search-bar" [class.active]="showSearchBar" role="search" aria-hidden="{{ !showSearchBar }}">
+      <form class="search-container flex align-items-center gap-2" (ngSubmit)="search()">
+        <i class="pi pi-search search-icon" aria-hidden="true"></i>
+        <input name="headerSearch" type="text" placeholder="Rechercher un produit..." class="search-input" [(ngModel)]="searchQuery" (keyup.enter)="search()" />
+        <button class="search-btn" type="button" (click)="search()">Rechercher</button>
+      </form>
     </div>
+
+    <!-- Mobile Nav (kept simple) -->
+    <nav #mobileNav id="mobile-nav" class="mobile-nav" *ngIf="showMobileMenu" aria-label="Menu mobile" [ngStyle]="{'left.px': mobileNavLeft}">
+      <ul class="mobile-menu">
+        <li *ngFor="let it of items">
+          <button class="mobile-menu-item" type="button" (click)="navigateToItem(it)">{{ it.label }}</button>
+          <ul *ngIf="it.items" class="mobile-submenu">
+            <li *ngFor="let sub of it.items">
+              <button class="mobile-submenu-item" type="button" (click)="navigateToItem(sub)">{{ sub.label }}</button>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
   </div>
 </div>

@@ -644,4 +644,32 @@
   .product-actions {
     flex-wrap: wrap;
   }
+
+  /* Improve wishlist card stacking on mobile */
+  .wishlist-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .wishlist-card .product-image {
+    aspect-ratio: auto;
+    height: 260px;
+  }
+
+  .wishlist-card .product-info {
+    padding: 1rem;
+  }
+
+  .product-actions {
+    flex-direction: column;
+
+    .cart-btn, .move-cart-btn, .remove-btn {
+      width: 100%;
+    }
+  }
+
+  .recommended-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

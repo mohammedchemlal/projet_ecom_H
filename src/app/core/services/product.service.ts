@@ -364,9 +364,9 @@ export class ProductService {
     perPage?: number;
     sort?: string;
     isPromotion?: boolean;
-  }): Observable<Product[]> {
+  }): Observable<{ products: Product[]; total: number }> {
     if (!this.isBrowser) {
-      return of(this.productsSubject.value);
+      return of({ products: this.productsSubject.value, total: this.productsSubject.value.length });
     }
 
     let params = new HttpParams();
@@ -379,10 +379,16 @@ export class ProductService {
     if (filters?.sort) params = params.set('sort', filters.sort);
     if (filters?.isPromotion) params = params.set('is_promotion', '1');
 
-    return this.http.get<ApiProduct[]>(this.apiUrl, { params }).pipe(
-      map((products) => products.map((product) => this.mapApiProduct(product))),
-      tap((products) => this.productsSubject.next(products)),
-      catchError(() => of(this.productsSubject.value))
+    return this.http.get<any>(this.apiUrl, { params }).pipe(
+      map((resp) => {
+        const list: ApiProduct[] = Array.isArray(resp) ? resp : resp.data ?? [];
+        const mapped = list.map((product) => this.mapApiProduct(product));
+        const total = !Array.isArray(resp) && typeof resp.total === 'number' ? resp.total : mapped.length;
+        // update cache with current page results
+        this.productsSubject.next(mapped);
+        return { products: mapped, total };
+      }),
+      catchError(() => of({ products: this.productsSubject.value, total: this.productsSubject.value.length }))
     );
   }
 

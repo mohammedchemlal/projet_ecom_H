@@ -266,4 +266,8 @@ export class CartComponent implements OnInit, OnDestroy {
   isEmpty(): boolean {
     return this.cartItems.length === 0;
   }
+
+  trackById(index: number, item: any): any {
+    return item?.productId ?? item?.id ?? index;
+  }
 }

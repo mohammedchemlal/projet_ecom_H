@@ -16,6 +16,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { map } from 'rxjs';
 
 import { PromoCodeService } from '../../core/services/promo-code.service';
+import { AdminRefreshService } from '../../core/services/admin-refresh.service';
 import type { PromoCode } from '../../shared/models/promo-code.model';
 
 @Component({
@@ -41,6 +42,7 @@ import type { PromoCode } from '../../shared/models/promo-code.model';
 export class AdminPromoCodesComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly promoCodeService = inject(PromoCodeService);
+  private readonly adminRefresh = inject(AdminRefreshService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly confirmationService = inject(ConfirmationService);
@@ -88,6 +90,7 @@ export class AdminPromoCodesComponent implements OnInit {
       });
 
     this.loadPromoCodes();
+    this.adminRefresh.on('promo_codes').pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadPromoCodes());
   }
 
   loadPromoCodes(): void {
@@ -142,6 +145,7 @@ export class AdminPromoCodesComponent implements OnInit {
             summary: 'Succes',
             detail: 'Code promo supprime'
           });
+          this.adminRefresh.notify('promo_codes');
         });
       }
     });
@@ -181,6 +185,7 @@ export class AdminPromoCodesComponent implements OnInit {
           summary: 'Succes',
           detail: 'Code promo modifie'
         });
+        this.adminRefresh.notify('promo_codes');
         this.promoDialog.set(false);
       });
 
@@ -194,6 +199,7 @@ export class AdminPromoCodesComponent implements OnInit {
         summary: 'Succes',
         detail: 'Code promo cree'
       });
+        this.adminRefresh.notify('promo_codes');
       this.promoDialog.set(false);
     });
   }
@@ -206,6 +212,7 @@ export class AdminPromoCodesComponent implements OnInit {
         summary: 'Succes',
         detail: `Code promo ${checked ? 'active' : 'desactive'}`
       });
+        this.adminRefresh.notify('promo_codes');
     });
   }
 

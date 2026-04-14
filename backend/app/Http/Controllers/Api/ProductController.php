@@ -70,9 +70,16 @@ class ProductController extends Controller
                 $query->orderByDesc('created_at');
         }
 
-        $products = $query->get();
+        // Server-side pagination: use page & per_page query params
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = max(1, (int) $request->query('per_page', 12));
 
-        return response()->json($products);
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => $paginator->items(),
+            'total' => $paginator->total(),
+        ]);
     }
 
     public function show(Product $product): JsonResponse

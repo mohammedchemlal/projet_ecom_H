@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { ProductService } from '../../core/services/product.service';
+import { SeoService } from '../../core/services/seo.service';
 import { CartService } from '../../core/services/cart.service';
 import { WishlistService } from '../../core/services/wishlist.service';
 import { Product, ProductReview } from '../../shared/models/product.model';
@@ -32,6 +33,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   quantity = 1;
   selectedImageIndex = 0;
   activeTab: 'description' | 'reviews' = 'description';
+  productJsonLd: string | null = null;
   
   // Review related
   reviews: ProductReview[] = [];
@@ -55,8 +57,10 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     private productService: ProductService,
     private cartService: CartService,
     private wishlistService: WishlistService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private seo: SeoService
   ) {}
+
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -79,6 +83,49 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
       if (product) {
         this.product = product;
         this.loadRelatedProducts();
+        try {
+          const title = product.name || 'Produit — Valerya';
+          const description = (product.description || product.detailedDescription || '').slice(0, 160);
+          const image = product.images && product.images.length ? (product.images[0].startsWith('/') ? window.location.origin + product.images[0] : product.images[0]) : undefined;
+          this.seo.setTitle(title);
+          this.seo.setMetaTags({ description });
+          this.seo.setOpenGraph({ title, description, image });
+
+          // JSON-LD structured data for Product
+          try {
+            const availability = (product.stock && product.stock > 0) ? 'http://schema.org/InStock' : 'http://schema.org/OutOfStock';
+            const price = product.discountPrice ?? product.price;
+            const ld: any = {
+              '@context': 'https://schema.org/',
+              '@type': 'Product',
+              name: product.name,
+              image: product.images && product.images.length ? product.images.map((img: string) => img.startsWith('/') ? window.location.origin + img : img) : undefined,
+              description: product.detailedDescription || product.description || '',
+              sku: (product as any).sku || (product.id != null ? String(product.id) : undefined),
+              offers: {
+                '@type': 'Offer',
+                url: typeof window !== 'undefined' ? window.location.href : undefined,
+                priceCurrency: 'MAD',
+                price: price,
+                availability,
+              }
+            };
+
+            if (product.reviewCount) {
+              ld.aggregateRating = {
+                '@type': 'AggregateRating',
+                ratingValue: product.rating || 0,
+                reviewCount: product.reviewCount || 0
+              };
+            }
+
+            this.productJsonLd = JSON.stringify(ld, null, 2);
+          } catch (e) {
+            // ignore JSON-LD errors
+          }
+        } catch (e) {
+          // ignore server-side or non-browser errors
+        }
       } else {
         this.messageService.add({
           severity: 'error',
@@ -332,5 +379,9 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
         items: section.items.filter((item) => item.trim().length > 0)
       }))
       .filter((section) => section.items.length > 0);
+  }
+
+  trackById(index: number, item: any): any {
+    return item?.id ?? index;
   }
 }

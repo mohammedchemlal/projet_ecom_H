@@ -1,5 +1,5 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, HostListener, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CarouselModule } from 'primeng/carousel';
@@ -13,6 +13,9 @@ import { ProductService } from '../../core/services/product.service';
 import { TestimonialService } from '../../core/services/testimonial.service';
 import { WishlistService } from '../../core/services/wishlist.service';
 import { Product, Testimonial } from '../../shared/models/product.model';
+import { AuthService } from '../../core/services/auth.service';
+import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
 
 interface HomeCategoryCard {
   name: string;
@@ -29,6 +32,7 @@ interface HomeCategoryCard {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit {
+  heroScrollProgress = 0; // 0..1 where 1 means hero fully scrolled past
   private cachedCategories: CategoryOption[] = [];
   private activeProducts: Product[] = [];
 
@@ -66,28 +70,22 @@ export class HomeComponent implements OnInit {
 
   heroSlides = [
     {
-      image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1280&q=72',
-      alt: 'Collier doré mis en valeur sur fond sombre',
+      // Existing assets found in public/assets/hero/
+      image: 'assets/hero/hero.jpeg',
+      alt: 'Modèle portant un collier élégant en studio',
       priority: true,
-      title: 'Collection Automne/Hiver 2026',
-      subtitle: 'Découvrez notre nouvelle collection de bijoux raffinés',
-      cta: 'Explorer'
+      title: 'Nouvelles Arrivées 2026',
+      subtitle: "Élégance et savoir-faire — pièces sélectionnées avec soin",
+      cta: 'Découvrir la collection'
     },
     {
-      image: 'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?auto=format&fit=crop&w=1280&q=72',
-      alt: 'Bague élégante avec finition argentée',
+      // Fallback: reuse first hero if a third image is not yet available
+      image: 'assets/hero/hero.jpeg',
+      alt: 'Ambiance studio avec bijoux et textures raffinées',
       priority: false,
-      title: 'Élégance Intemporelle',
-      subtitle: 'Des pièces uniques pour chaque occasion',
-      cta: 'Découvrir'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=1280&q=72',
-      alt: 'Bracelet raffiné présenté en studio',
-      priority: false,
-      title: 'Offre Spéciale -30%',
-      subtitle: 'Sur une sélection premium • Stock limité',
-      cta: 'Profiter'
+      title: 'Offres Exclusives',
+      subtitle: 'Profitez des remises saisonnières sur une sélection premium',
+      cta: 'Profiter maintenant'
     }
   ];
 
@@ -100,12 +98,32 @@ export class HomeComponent implements OnInit {
     private readonly testimonialService: TestimonialService,
     private readonly cartService: CartService,
     private readonly wishlistService: WishlistService
+    ,
+    public readonly authService: AuthService,
+    public readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadProducts();
     this.loadCategoriesAndPromo();
     this.loadTestimonials();
+    // Fallback: if hero images never fire load/error, show hero after short timeout
+    setTimeout(() => {
+      if (!this.heroReady) {
+        this.heroReady = true;
+        this.cdr.markForCheck();
+      }
+    }, 1500);
+  }
+
+  // Expose current user observable for template
+  get currentUser$(): Observable<any> {
+    return this.authService.currentUser$;
+  }
+
+  goToProfile(tab: string) {
+    this.router.navigate(['/profile'], { queryParams: { tab } });
   }
 
   loadProducts(): void {
@@ -178,6 +196,21 @@ export class HomeComponent implements OnInit {
     if (isPrioritySlide) {
       this.heroReady = true;
     }
+  }
+
+  @HostListener('window:scroll', [])
+  onWindowScroll(): void {
+    const el = document.querySelector('.hero-carousel') as HTMLElement | null;
+    if (!el) {
+      return;
+    }
+
+    const rect = el.getBoundingClientRect();
+    const height = rect.height || window.innerHeight;
+    // progress = amount of hero scrolled off the viewport (0...1)
+    const progress = Math.min(Math.max(-rect.top / height, 0), 1);
+    this.heroScrollProgress = progress;
+    this.cdr.markForCheck();
   }
 
   private rebuildCategoryCards(): void {
@@ -256,6 +289,30 @@ export class HomeComponent implements OnInit {
 
       this.newsletterEmail = '';
     }, 400);
+  }
+
+  trackById(index: number, item: any): any {
+    return item?.id ?? index;
+  }
+
+  normalizeImage(path?: string): string {
+    if (!path) return 'https://via.placeholder.com/600x400?text=Image';
+    // If image path looks like a server-side storage path, point to backend dev server
+    if (path.startsWith('/storage') || path.startsWith('storage') || path.startsWith('/uploads')) {
+      return `http://localhost:8000${path.startsWith('/') ? '' : '/'}${path}`.replace('//', '/').replace('http:/', 'http://');
+    }
+    return path;
+  }
+
+  /**
+   * Return a WebP srcset string for the given image path.
+   * Expects source images named like `/assets/hero/hero.jpeg` and generated files
+   * `/assets/hero/hero@1920.webp`, `/assets/hero/hero@1280.webp`, `/assets/hero/hero@768.webp`.
+   */
+  getWebpSrcSet(imagePath: string): string {
+    if (!imagePath) return '';
+    const base = imagePath.replace(/\.[^.]+$/, '');
+    return `${base}@1920.webp 1920w, ${base}@1280.webp 1280w, ${base}@768.webp 768w`;
   }
 
   private isValidEmail(value: string): boolean {

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormBuilder } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -14,6 +14,8 @@ import { TextareaModule } from 'primeng/textarea';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 
 import { TestimonialService } from '../../core/services/testimonial.service';
+import { AdminRefreshService } from '../../core/services/admin-refresh.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { Testimonial } from '../../shared/models/product.model';
 
 @Component({
@@ -38,7 +40,9 @@ import type { Testimonial } from '../../shared/models/product.model';
 })
 export class AdminTestimonialsComponent implements OnInit {
   private readonly testimonialService = inject(TestimonialService);
+  private readonly adminRefresh = inject(AdminRefreshService);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
@@ -62,6 +66,7 @@ export class AdminTestimonialsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTestimonials();
+    this.adminRefresh.on('testimonials').pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadTestimonials());
   }
 
   loadTestimonials(): void {

@@ -1,6 +1,6 @@
-@if (!hideHeader()) {
+<ng-container *ngIf="!hideHeader()">
   <app-header></app-header>
-}
+</ng-container>
 <p-toast position="top-right"></p-toast>
 <p-confirmDialog appendTo="body"></p-confirmDialog>
 

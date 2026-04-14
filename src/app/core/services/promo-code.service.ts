@@ -57,6 +57,9 @@ export class PromoCodeService {
     }
   ]);
 
+  private readonly loadingSubject = new BehaviorSubject<boolean>(true);
+  readonly loading$ = this.loadingSubject.asObservable();
+
   readonly codes$ = this.codesSubject.asObservable();
 
   constructor() {
@@ -114,10 +117,13 @@ export class PromoCodeService {
       return of(this.codesSubject.value);
     }
 
+    this.loadingSubject.next(true);
+
     return this.http.get<ApiPromoCode[]>(this.apiUrl).pipe(
       map((codes) => codes.map((code) => this.mapApiPromoCode(code))),
       tap((codes) => this.codesSubject.next(codes)),
-      catchError(() => of(this.codesSubject.value))
+      catchError(() => of(this.codesSubject.value)),
+      tap(() => this.loadingSubject.next(false))
     );
   }
 

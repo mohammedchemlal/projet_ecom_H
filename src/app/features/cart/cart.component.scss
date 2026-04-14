@@ -15,7 +15,6 @@
     padding: 0 2rem;
   }
 
-  // Breadcrumb
   .breadcrumb {
     display: flex;
     align-items: center;
@@ -44,7 +43,6 @@
     }
   }
 
-  // Page Header
   .page-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -72,7 +70,6 @@
     }
   }
 
-  // Empty Cart
   .empty-cart {
     text-align: center;
     padding: 4rem;
@@ -99,7 +96,6 @@
     }
   }
 
-  // Cart Content
   .cart-content {
     display: grid;
     grid-template-columns: 1fr 380px;
@@ -606,7 +602,6 @@
     }
   }
 
-  // Recommended Products
   .recommended-section {
     margin-top: 4rem;
     animation: ui-fade-up 0.45s ease 0.15s both;
@@ -737,7 +732,6 @@
     }
   }
 
-  // Trust Badges
   .trust-badges {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -789,7 +783,6 @@
   }
 }
 
-// Loading Skeleton
 .loading-skeleton {
   padding: 2rem 0 60px;
 

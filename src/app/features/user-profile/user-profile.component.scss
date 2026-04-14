@@ -18,7 +18,6 @@
     padding: 0 2rem;
   }
 
-  // Breadcrumb
   .breadcrumb {
     display: flex;
     align-items: center;
@@ -47,7 +46,6 @@
     }
   }
 
-  // Page Header
   .page-header {
     text-align: center;
     margin-bottom: 3rem;
@@ -75,13 +73,11 @@
     }
   }
 
-  // Profile Content
   .profile-content {
     display: grid;
     grid-template-columns: 300px 1fr;
     gap: 2rem;
 
-    // Sidebar
     .profile-sidebar {
       .user-card {
         background: white;
@@ -213,7 +209,6 @@
       }
     }
 
-    // Main Content
     .profile-main {
       .stats-cards {
         display: grid;
@@ -554,75 +549,7 @@
         }
       }
 
-      // Security Tab
-      .security-card {
-        background: var(--profile-glass);
-        border-radius: 20px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: var(--profile-shadow);
-        border: 1px solid var(--profile-line);
-        animation: ui-fade-up 0.45s ease both;
-
-        &:nth-of-type(1) {
-          animation-delay: 0.06s;
-        }
-
-        &:nth-of-type(2) {
-          animation-delay: 0.12s;
-        }
-
-        &:nth-of-type(3) {
-          animation-delay: 0.18s;
-        }
-
-        h2 {
-          font-size: 1.1rem;
-          margin-bottom: 1.5rem;
-          color: var(--text-dark);
-        }
-
-        .device-list, .activity-list {
-          .device-item, .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-
-            &:last-child {
-              border-bottom: none;
-            }
-
-            i {
-              font-size: 1.2rem;
-              color: var(--primary-color);
-            }
-
-            div {
-              flex: 1;
-
-              strong {
-                display: block;
-                font-size: 0.9rem;
-              }
-
-              span {
-                font-size: 0.75rem;
-                color: var(--text-gray);
-              }
-            }
-
-            .device-badge {
-              background: var(--success);
-              color: white;
-              padding: 2px 8px;
-              border-radius: 12px;
-              font-size: 0.7rem;
-            }
-          }
-        }
-      }
+      /* security-card styles removed — sections deleted from template */
     }
   }
 

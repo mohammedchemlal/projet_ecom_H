@@ -26,7 +26,8 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/app/admin/admin-common.scss"
             ],
             "server": "src/main.server.ts",
             "outputMode": "server",
@@ -47,8 +48,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "20kB",
-                  "maximumError": "24kB"
+                  "maximumWarning": "22kB",
+                  "maximumError": "26kB"
                 }
               ],
               "outputHashing": "all"

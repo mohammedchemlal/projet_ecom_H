@@ -1,5 +1,9 @@
 <?php
 
+// Prevent PHP warnings/notices from being output in API responses
+ini_set('display_errors', '0');
+error_reporting(E_ERROR | E_PARSE);
+
 use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));

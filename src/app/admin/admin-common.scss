@@ -1,0 +1,40 @@
+/* Common admin responsive helpers */
+.admin-container {
+  padding: 1rem;
+}
+
+/* Make prime table scroll horizontally on small screens */
+.admin-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Buttons full width on small screens */
+@media (max-width: 640px) {
+  .admin-actions-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-actions-row button,
+  .admin-actions-row .p-button {
+    width: 100%;
+  }
+
+  /* Make forms stack */
+  .admin-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Dialogs full width on small screens */
+  :root ::ng-deep .p-dialog .p-dialog-content {
+    padding: 0.5rem;
+  }
+  :root ::ng-deep .p-dialog {
+    width: 96vw !important;
+    left: 2vw !important;
+  }
+}

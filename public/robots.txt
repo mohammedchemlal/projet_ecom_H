@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Sitemap for valerya.store
+Sitemap: https://valerya.store/sitemap.xml

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -27,6 +28,7 @@ type PeriodFilter = 'all' | 'today' | '7d' | '30d';
 @Component({
   selector: 'app-admin-orders',
   imports: [
+    CommonModule,
     ButtonModule,
     DialogModule,
     FormsModule,
@@ -345,6 +347,65 @@ export class AdminOrdersComponent implements OnInit {
 
   formatCurrency(value: number): string {
     return this.currencyFormatter.format(value);
+  }
+
+  private escapeHtml(str: unknown): string {
+    const s = String(str ?? '');
+    return s.replace(/[&<>\"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] ?? c));
+  }
+
+
+  computeSubtotal(order: Order): number {
+    return (order.items || []).reduce((sum, item) => {
+      const price = item.product?.discountPrice ?? item.product?.price ?? 0;
+      return sum + price * (item.quantity ?? 1);
+    }, 0);
+  }
+
+  printOrder(order: OrderView): void {
+    const popup = window.open('', '_blank', 'width=900,height=700');
+    if (!popup) {
+      this.messageService.add({ severity: 'warn', summary: 'Impression', detail: 'Impossible d ouvrir la fenêtre d impression.' });
+      return;
+    }
+
+    const itemsHtml = (order.items || [])
+          .map(
+        (it) =>
+          `<tr><td style="padding:8px;border-bottom:1px solid #eee">${this.escapeHtml(it.product?.name ?? 'Produit')}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:center">${it.quantity}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${this.formatCurrency(
+            this.getOrderItemPrice(it)
+          )}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${this.formatCurrency(this.getOrderItemPrice(it) * it.quantity)}</td></tr>`
+      )
+      .join('');
+
+    const html = `
+      <html>
+        <head>
+          <title>Commande #${order.id}</title>
+        </head>
+        <body style="font-family: Arial, Helvetica, sans-serif; color:#222; padding:20px;">
+          <h2>Commande #${order.id}</h2>
+          <p><strong>Client:</strong> ${this.escapeHtml(order.userName)}</p>
+          <p><strong>Date:</strong> ${this.escapeHtml(this.formatDate(order.createdAt))}</p>
+          <h3>Produits</h3>
+          <table style="width:100%;border-collapse:collapse"> 
+            <thead>
+              <tr><th style="text-align:left;padding:8px;border-bottom:2px solid #ddd">Produit</th><th style="padding:8px;border-bottom:2px solid #ddd">Qté</th><th style="padding:8px;border-bottom:2px solid #ddd;text-align:right">Prix</th><th style="padding:8px;border-bottom:2px solid #ddd;text-align:right">Total</th></tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <h3 style="text-align:right">Total: ${this.formatCurrency(order.total)}</h3>
+        </body>
+      </html>
+    `;
+
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+    popup.focus();
+    setTimeout(() => popup.print(), 500);
   }
 
   getFormattedAddress(address: string): string {

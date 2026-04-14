@@ -1,71 +1,68 @@
 <div class="product-list-page">
   <div class="container">
     <!-- Breadcrumb -->
-    <div class="breadcrumb">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
       <a routerLink="/home">Accueil</a>
-      <i class="pi pi-chevron-right"></i>
-      <span>Produits</span>
-    </div>
+      <i class="pi pi-chevron-right" aria-hidden="true"></i>
+      <span aria-current="page">Produits</span>
+    </nav>
 
     <!-- Page Header -->
-    <div class="page-header">
+    <header class="page-header">
       <h1>Nos Bijoux</h1>
       <p>Découvrez notre collection exclusive de bijoux fins et élégants</p>
-    </div>
+    </header>
 
     <!-- Mobile Filter Toggle -->
     <div class="mobile-filter-toggle">
-      <button class="filter-toggle-btn" (click)="sidebarVisible = true">
-        <i class="pi pi-filter"></i>
-        Filtrer
-        @if (getActiveFiltersCount() > 0) {
-          <span class="filter-badge">{{ getActiveFiltersCount() }}</span>
-        }
+      <button class="filter-toggle-btn" type="button" (click)="sidebarVisible = true" aria-controls="mobile-filters" aria-expanded="{{ sidebarVisible }}">
+        <i class="pi pi-filter" aria-hidden="true"></i>
+        <span>Filtrer</span>
+        <span *ngIf="getActiveFiltersCount() > 0" class="filter-badge">{{ getActiveFiltersCount() }}</span>
       </button>
-      <div class="results-count-mobile">{{ totalProducts }} produits</div>
+      <div class="results-count-mobile" aria-live="polite">{{ totalProducts }} produits</div>
     </div>
 
     <div class="product-layout">
       <!-- Sidebar Filters - Desktop -->
-      <aside class="filters-sidebar desktop-sidebar">
+      <aside class="filters-sidebar desktop-sidebar" aria-label="Filtres">
         <div class="filters-header">
           <h3>Filtres</h3>
-          @if (hasActiveFilters()) {
-            <button class="clear-all-btn" (click)="clearFilters()">
-              <i class="pi pi-times"></i>
-              Tout effacer
-            </button>
-          }
+          <button *ngIf="hasActiveFilters()" class="clear-all-btn" type="button" (click)="clearFilters()">
+            <i class="pi pi-times" aria-hidden="true"></i>
+            <span>Tout effacer</span>
+          </button>
         </div>
 
         <!-- Categories Filter -->
         <div class="filter-group">
           <h4 class="filter-title">
-            <i class="pi pi-tags"></i>
-            Catégories
+            <i class="pi pi-tags" aria-hidden="true"></i>
+            <span>Catégories</span>
           </h4>
           <div class="categories-list">
-            @for (category of visibleCategories(); track category.value) {
-              <div
-                class="category-item"
-                [class.active]="selectedCategories.includes(category.value)"
-                (click)="toggleCategory(category.value)"
-              >
-                <div class="category-info">
-                  <i [class]="'pi ' + category.icon"></i>
-                  <span>{{ category.label }}</span>
-                </div>
-                <span class="category-count">{{ category.count }}</span>
+            <button
+              *ngFor="let category of visibleCategories(); trackBy: trackByValue"
+              class="category-item"
+              type="button"
+              [attr.aria-pressed]="selectedCategories.includes(category.value)"
+              [class.active]="selectedCategories.includes(category.value)"
+              (click)="toggleCategory(category.value)"
+            >
+              <div class="category-info">
+                <i [class]="'pi ' + category.icon" aria-hidden="true"></i>
+                <span>{{ category.label }}</span>
               </div>
-            }
+              <span class="category-count">{{ category.count }}</span>
+            </button>
           </div>
         </div>
 
         <!-- Price Filter -->
         <div class="filter-group">
           <h4 class="filter-title">
-            <i class="pi pi-dollar"></i>
-            Prix
+            <i class="pi pi-dollar" aria-hidden="true"></i>
+            <span>Prix</span>
           </h4>
           <div class="price-filter">
             <p-slider
@@ -91,56 +88,38 @@
 
         <!-- Promotions Filter -->
         <div class="filter-group">
-          <div class="promo-filter" (click)="togglePromotionsFilter()">
-            <div class="checkbox-custom" [class.checked]="showPromotionsOnly">
-              @if (showPromotionsOnly) {
-                <i class="pi pi-check"></i>
-              }
-            </div>
-            <div class="promo-content">
-              <i class="pi pi-tag"></i>
-              <span>En promotion uniquement</span>
-            </div>
-          </div>
+          <label class="promo-filter">
+            <input type="checkbox" [checked]="showPromotionsOnly" (change)="togglePromotionsFilter()" aria-label="Afficher les promotions seulement" />
+            <span class="promo-content"><i class="pi pi-tag" aria-hidden="true"></i> En promotion uniquement</span>
+          </label>
         </div>
 
         <!-- Active Filters Tags -->
-        @if (hasActiveFilters()) {
-          <div class="active-filters">
-            @for (category of selectedCategories; track category) {
-              <div class="filter-tag" (click)="toggleCategory(category)">
-                <span>{{ getCategoryLabel(category) }}</span>
-                <i class="pi pi-times-circle"></i>
-              </div>
-            }
-            @if (priceRange[0] > 0 || priceRange[1] < maxPrice) {
-              <div class="filter-tag" (click)="resetPriceFilter()">
-                <span
-                  >Prix: {{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }} -
-                  {{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span
-                >
-                <i class="pi pi-times-circle"></i>
-              </div>
-            }
-            @if (showPromotionsOnly) {
-              <div class="filter-tag" (click)="togglePromotionsFilter()">
-                <span>En promotion</span>
-                <i class="pi pi-times-circle"></i>
-              </div>
-            }
-          </div>
-        }
+        <div *ngIf="hasActiveFilters()" class="active-filters" aria-live="polite">
+          <button *ngFor="let category of selectedCategories" class="filter-tag" type="button" (click)="toggleCategory(category)">
+            <span>{{ getCategoryLabel(category) }}</span>
+            <i class="pi pi-times-circle" aria-hidden="true"></i>
+          </button>
+          <button *ngIf="priceRange[0] > 0 || priceRange[1] < maxPrice" class="filter-tag" type="button" (click)="resetPriceFilter()">
+            <span>Prix: {{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }} - {{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            <i class="pi pi-times-circle" aria-hidden="true"></i>
+          </button>
+          <button *ngIf="showPromotionsOnly" class="filter-tag" type="button" (click)="togglePromotionsFilter()">
+            <span>En promotion</span>
+            <i class="pi pi-times-circle" aria-hidden="true"></i>
+          </button>
+        </div>
       </aside>
 
       <!-- Products Grid -->
       <main class="products-main">
         <!-- Sort and Results -->
         <div class="products-toolbar">
-          <div class="results-count">
+          <div class="results-count" aria-live="polite">
             <span>{{ totalProducts }} produits trouvés</span>
           </div>
           <div class="sort-dropdown">
-            <i class="pi pi-sort-amount-down-alt"></i>
+            <i class="pi pi-sort-amount-down-alt" aria-hidden="true"></i>
             <p-select
               [(ngModel)]="sortBy"
               [options]="sortOptions"
@@ -154,187 +133,130 @@
         </div>
 
         <!-- Products Grid -->
-        @if (!isLoading) {
-          <div class="products-grid">
-            @for (product of filteredProducts; track product) {
-              <div class="product-card">
-                <div class="product-image">
-                  <img [src]="product.images[0]" [alt]="product.name" loading="lazy" />
-                  <!-- Discount Badge -->
-                  @if (product.isPromotion) {
-                    <div class="discount-badge">-{{ getDiscountPercentage(product) }}%</div>
-                  }
-                  <!-- Quick Actions -->
-                  <div class="product-actions">
-                    <button
-                      class="action-btn wishlist-btn"
-                      [class.active]="isInWishlist(product.id)"
-                      (click)="addToWishlist(product)"
-                      title="Ajouter aux favoris"
-                    >
-                      <i class="pi pi-heart"></i>
-                    </button>
-                    <button
-                      class="action-btn quick-view-btn"
-                      [routerLink]="['/product', product.id]"
-                      title="Voir détails"
-                    >
-                      <i class="pi pi-eye"></i>
-                    </button>
-                  </div>
-                  <!-- Hover Add to Cart -->
-                  <div class="hover-add-to-cart">
-                    <button class="add-to-cart-btn" (click)="addToCart(product)">
-                      <i class="pi pi-shopping-cart"></i>
-                      Ajouter au panier
-                    </button>
-                  </div>
-                </div>
-                <div class="product-info">
-                  <h3 class="product-title">
-                    <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
-                  </h3>
-                  <div class="product-rating">
-                    <p-rating [ngModel]="product.rating" [readonly]="true"></p-rating>
-                    <span class="review-count">({{ product.reviewCount }})</span>
-                  </div>
-                  <div class="product-price">
-                    <span class="current-price">{{
-                      getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
-                    }}</span>
-                    @if (product.discountPrice) {
-                      <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-                    }
-                  </div>
-                  <div class="product-actions-mobile">
-                    <button class="cart-btn-mobile" (click)="addToCart(product)">
-                      <i class="pi pi-shopping-cart"></i>
-                      Ajouter
-                    </button>
-                    <button
-                      class="wishlist-btn-mobile"
-                      [class.active]="isInWishlist(product.id)"
-                      (click)="addToWishlist(product)"
-                    >
-                      <i class="pi pi-heart"></i>
-                    </button>
-                  </div>
-                </div>
+        <div *ngIf="!isLoading; else loadingTpl" class="products-grid">
+          <article *ngFor="let product of filteredProducts; trackBy: trackById" class="product-card" aria-labelledby="product-{{product.id}}">
+            <div class="product-image">
+              <img [src]="product.images[0]" [alt]="product.name" loading="lazy" />
+              <div *ngIf="product.isPromotion" class="discount-badge" aria-hidden="true">-{{ getDiscountPercentage(product) }}%</div>
+              <div class="product-actions">
+                <button
+                  class="action-btn wishlist-btn"
+                  type="button"
+                  [class.active]="isInWishlist(product.id)"
+                  (click)="addToWishlist(product)"
+                  aria-label="Ajouter aux favoris"
+                >
+                  <i class="pi pi-heart" aria-hidden="true"></i>
+                </button>
+                <a class="action-btn quick-view-btn" [routerLink]="['/product', product.id]" aria-label="Voir détails">
+                  <i class="pi pi-eye" aria-hidden="true"></i>
+                </a>
               </div>
-            }
-            <!-- Empty State -->
-            @if (filteredProducts.length === 0) {
-              <div class="empty-state">
-                <i class="pi pi-search"></i>
-                <h3>Aucun produit trouvé</h3>
-                <p>Essayez de modifier vos filtres ou rechercher autre chose</p>
-                <button class="btn-primary" (click)="clearFilters()">
-                  Effacer tous les filtres
+              <div class="hover-add-to-cart">
+                <button class="add-to-cart-btn" type="button" (click)="addToCart(product)" aria-label="Ajouter au panier">
+                  <i class="pi pi-shopping-cart" aria-hidden="true"></i>
+                  <span>Ajouter au panier</span>
                 </button>
               </div>
-            }
-          </div>
-        } @else {
-          <div class="products-grid">
-            @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track _) {
-              <div class="skeleton-card">
-                <div class="skeleton skeleton-image"></div>
-                <div class="skeleton skeleton-text"></div>
-                <div class="skeleton skeleton-text short"></div>
-                <div class="skeleton skeleton-price"></div>
+            </div>
+
+            <div class="product-info">
+              <h3 id="product-{{product.id}}" class="product-title">
+                <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
+              </h3>
+              <div class="product-rating">
+                <p-rating [ngModel]="product.rating" [readonly]="true"></p-rating>
+                <span class="review-count">({{ product.reviewCount }})</span>
               </div>
-            }
+              <div class="product-price">
+                <span class="current-price">{{ getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                <span *ngIf="product.discountPrice" class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              </div>
+              <div class="product-actions-mobile">
+                <button class="cart-btn-mobile" type="button" (click)="addToCart(product)" aria-label="Ajouter"> <i class="pi pi-shopping-cart" aria-hidden="true"></i> Ajouter</button>
+                <button class="wishlist-btn-mobile" type="button" [class.active]="isInWishlist(product.id)" (click)="addToWishlist(product)" aria-label="Favoris"><i class="pi pi-heart" aria-hidden="true"></i></button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Empty State -->
+          <div *ngIf="filteredProducts.length === 0" class="empty-state">
+            <i class="pi pi-search" aria-hidden="true"></i>
+            <h3>Aucun produit trouvé</h3>
+            <p>Essayez de modifier vos filtres ou rechercher autre chose</p>
+            <button class="btn-primary" type="button" (click)="clearFilters()">Effacer tous les filtres</button>
           </div>
-        }
+        </div>
+
+        <ng-template #loadingTpl>
+          <div class="products-grid">
+            <div *ngFor="let _ of [1,2,3,4,5,6,7,8]" class="skeleton-card">
+              <div class="skeleton skeleton-image"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text short"></div>
+              <div class="skeleton skeleton-price"></div>
+            </div>
+          </div>
+        </ng-template>
 
         <!-- Pagination -->
-        @if (filteredProducts.length > 0) {
-          <div class="pagination-container">
-            <p-paginator
-              [rows]="itemsPerPage"
-              [totalRecords]="totalProducts"
-              (onPageChange)="onPageChange($event)"
-              [showCurrentPageReport]="true"
-              currentPageReportTemplate="Page {currentPage} sur {totalPages}"
-              [showFirstLastIcon]="true"
-              [showJumpToPageDropdown]="true"
-              [showPageLinks]="true"
-            ></p-paginator>
-          </div>
-        }
+        <div *ngIf="filteredProducts.length > 0" class="pagination-container">
+          <p-paginator
+            [rows]="itemsPerPage"
+            [totalRecords]="totalProducts"
+            (onPageChange)="onPageChange($event)"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Page {currentPage} sur {totalPages}"
+            [showFirstLastIcon]="true"
+            [showJumpToPageDropdown]="true"
+            [showPageLinks]="true"
+          ></p-paginator>
+        </div>
       </main>
     </div>
+
+    <!-- Mobile Filters Drawer -->
+    <p-drawer [(visible)]="sidebarVisible" position="left" [style]="{ width: '320px' }" [modal]="true" id="mobile-filters" aria-label="Filtres">
+      <div class="drawer-content">
+        <header class="drawer-header">
+          <h3>Filtres</h3>
+          <button class="btn-icon" (click)="sidebarVisible = false" aria-label="Fermer les filtres"><i class="pi pi-times"></i></button>
+        </header>
+
+        <div class="drawer-body">
+          <!-- reuse desktop filter UI in mobile drawer -->
+          <div class="filter-group">
+            <h4>Catégories</h4>
+            <div class="categories-list">
+              <button *ngFor="let category of visibleCategories(); trackBy: trackByValue" class="category-item" type="button" (click)="toggleCategory(category.value);">
+                <span>{{ category.label }}</span>
+                <span class="count">{{ category.count }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <h4>Prix</h4>
+            <p-slider [(ngModel)]="priceRange" [range]="true" [min]="0" [max]="maxPrice" (ngModelChange)="onPriceRangeChange()"></p-slider>
+            <div class="price-values">
+              <span>{{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              <span>{{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [checked]="showPromotionsOnly" (change)="togglePromotionsFilter()" />
+              <span>En promotion uniquement</span>
+            </label>
+          </div>
+        </div>
+
+        <footer class="drawer-footer">
+          <button class="btn-secondary" (click)="clearFilters(); sidebarVisible = false">Effacer tout</button>
+          <button class="btn-primary" (click)="sidebarVisible = false">Appliquer</button>
+        </footer>
+      </div>
+    </p-drawer>
   </div>
 </div>
-
-<!-- Mobile Sidebar Filters -->
-<p-drawer [(visible)]="sidebarVisible" position="left" styleClass="mobile-filters-sidebar">
-  <ng-template pTemplate="header">
-    <div class="sidebar-header">
-      <h3>Filtres</h3>
-      <button class="close-sidebar" (click)="sidebarVisible = false">
-        <i class="pi pi-times"></i>
-      </button>
-    </div>
-  </ng-template>
-
-  <div class="sidebar-content">
-    <!-- Categories -->
-    <div class="filter-group-mobile">
-      <h4>Catégories</h4>
-      <div class="categories-mobile">
-        @for (category of visibleCategories(); track category.value) {
-          <div
-            class="category-mobile"
-            [class.active]="selectedCategories.includes(category.value)"
-            (click)="toggleCategory(category.value)"
-          >
-            <span>{{ category.label }}</span>
-            <span class="count">{{ category.count }}</span>
-          </div>
-        }
-      </div>
-    </div>
-
-    <!-- Price Range -->
-    <div class="filter-group-mobile">
-      <h4>Prix</h4>
-      <p-slider 
-        [(ngModel)]="priceRange" 
-        [range]="true" 
-        [min]="0" 
-        [max]="maxPrice"
-        (ngModelChange)="onPriceRangeChange()"
-      ></p-slider>
-      <div class="price-values">
-        <span>{{ priceRange[0] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-        <span>{{ priceRange[1] | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-      </div>
-    </div>
-
-    <!-- Promotions -->
-    <div class="filter-group-mobile">
-      <label class="checkbox-label">
-        <input 
-          type="checkbox" 
-          [(ngModel)]="showPromotionsOnly"
-          (change)="togglePromotionsFilter()"
-        />
-        <span>En promotion uniquement</span>
-      </label>
-    </div>
-  </div>
-
-  <ng-template pTemplate="footer">
-    <div class="sidebar-footer">
-      <button class="btn-secondary" (click)="clearFilters(); sidebarVisible = false">
-        Effacer tout
-      </button>
-      <button class="btn-primary" (click)="sidebarVisible = false">
-        Fermer
-      </button>
-    </div>
-  </ng-template>
-</p-drawer>
-
-<!-- Skeleton Loader -->

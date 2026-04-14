@@ -34,7 +34,13 @@
           <p>Ce magasin accepte uniquement le paiement a la livraison.</p>
         </div>
 
-        <button pButton type="submit" label="Confirmer la commande" icon="pi pi-check"></button>
+        <button pButton type="button" label="Confirmer la commande" icon="pi pi-check" [disabled]="!canSubmit()" (click)="onSubmitClick()"></button>
+
+        @if (promoLoading()) {
+          <p class="helper helper-info">Codes promo en cours de chargement, patientez s'il vous plaît.</p>
+        } @else if (form.invalid) {
+          <p class="helper helper-warn">Le formulaire est invalide — vérifiez les champs obligatoires (ex. adresse complète).</p>
+        }
       </form>
     </p-card>
 

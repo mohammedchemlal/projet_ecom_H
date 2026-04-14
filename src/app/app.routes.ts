@@ -10,19 +10,35 @@ export const routes: Routes = [
 	{
 		path: '',
 		pathMatch: 'full',
-		loadComponent: loadHomeComponent
+		loadComponent: loadHomeComponent,
+		data: {
+			title: 'Valerya — Accueil',
+			description: 'Bijoux artisanaux et collections élégantes — découvrez nos nouveautés.'
+		}
 	},
 	{
 		path: 'home',
-		loadComponent: loadHomeComponent
+		loadComponent: loadHomeComponent,
+		data: {
+			title: 'Valerya — Accueil',
+			description: 'Bijoux artisanaux et collections élégantes — découvrez nos nouveautés.'
+		}
 	},
 	{
 		path: 'products',
-		loadComponent: () => import('./features/product-list/product-list.component').then((m) => m.ProductListComponent)
+		loadComponent: () => import('./features/product-list/product-list.component').then((m) => m.ProductListComponent),
+		data: {
+			title: 'Produits — Valerya',
+			description: 'Parcourez notre catalogue de bijoux : colliers, bracelets, bagues et boucles d\'oreilles.'
+		}
 	},
 	{
 		path: 'product/:id',
-		loadComponent: () => import('./features/product-detail/product-detail.component').then((m) => m.ProductDetailComponent)
+		loadComponent: () => import('./features/product-detail/product-detail.component').then((m) => m.ProductDetailComponent),
+		data: {
+			title: 'Produit — Valerya',
+			description: 'Détails du produit, prix, avis et options d\'achat.'
+		}
 	},
 	{
 		path: 'cart',

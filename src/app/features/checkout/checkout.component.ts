@@ -12,6 +12,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 
 import { AuthService } from '../../core/services/auth.service';
+import { PromoCodeService } from '../../core/services/promo-code.service';
 import { CartService, type CartPromo } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
 import type { CartItem } from '../../shared/models/cart-item.model';
@@ -26,6 +27,7 @@ import type { CartItem } from '../../shared/models/cart-item.model';
 export class CheckoutComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly promoCodeService = inject(PromoCodeService);
   private readonly cartService = inject(CartService);
   private readonly orderService = inject(OrderService);
   private readonly messageService = inject(MessageService);
@@ -33,6 +35,7 @@ export class CheckoutComponent {
 
   readonly cartItems = toSignal(this.cartService.cartItems$, { initialValue: [] as CartItem[] });
   readonly appliedPromo = toSignal(this.cartService.appliedPromo$, { initialValue: null as CartPromo | null });
+  readonly promoLoading = toSignal(this.promoCodeService.loading$, { initialValue: true });
   readonly subtotal = computed(() =>
     this.cartItems().reduce((total, item) => {
       const price = item.product.discountPrice || item.product.price;
@@ -113,5 +116,27 @@ export class CheckoutComponent {
           this.messageService.add({ severity: 'error', summary: 'Erreur', detail });
         }
       });
+  }
+
+  canSubmit(): boolean {
+    // disable if form invalid or promo codes are still loading
+    return !this.form.invalid && !this.promoLoading();
+  }
+
+  onSubmitClick(): void {
+    if (!this.canSubmit()) {
+      if (this.promoLoading()) {
+        this.messageService.add({ severity: 'info', summary: 'Chargement', detail: 'Codes promo en cours de chargement, veuillez patienter...' });
+        return;
+      }
+
+      if (this.form.invalid) {
+        this.form.markAllAsTouched();
+        this.messageService.add({ severity: 'warn', summary: 'Formulaire invalide', detail: 'Veuillez vérifier les informations de livraison.' });
+        return;
+      }
+    }
+
+    this.submitOrder();
   }
 }
