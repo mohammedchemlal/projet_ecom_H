@@ -12,6 +12,7 @@ import { ProductService } from '../../core/services/product.service';
 import { SeoService } from '../../core/services/seo.service';
 import { CartService } from '../../core/services/cart.service';
 import { WishlistService } from '../../core/services/wishlist.service';
+import { AuthService } from '../../core/services/auth.service';
 import { Product, ProductReview } from '../../shared/models/product.model';
 
 interface ReviewStats {
@@ -57,6 +58,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     private productService: ProductService,
     private cartService: CartService,
     private wishlistService: WishlistService,
+    private authService: AuthService,
     private messageService: MessageService,
     private seo: SeoService
   ) {}
@@ -186,7 +188,14 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
 
   addToWishlist() {
     if (this.product) {
-      this.wishlistService.addToWishlist(this.product);
+      // If user not logged in, redirect to registration page with returnUrl
+      if (!this.authService.isLoggedIn()) {
+        this.router.navigate(['/auth/register'], { queryParams: { returnUrl: this.router.url } });
+        return;
+      }
+
+      const wasIn = this.wishlistService.isInWishlist(this.product.id);
+      this.wishlistService.toggle(this.product);
       const isInWishlist = this.wishlistService.isInWishlist(this.product.id);
       this.messageService.add({
         severity: isInWishlist ? 'success' : 'info',
@@ -195,6 +204,21 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
         life: 3000
       });
     }
+  }
+
+  onWishlistClick(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // If user not logged in, force a full-page redirect to the register page
+    if (!this.authService.isLoggedIn()) {
+      const returnUrl = this.router.url || (this.product ? `/product/${this.product.id}` : '/');
+      window.location.assign(`/auth/register?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
+    // Otherwise call the existing handler
+    this.addToWishlist();
   }
 
   submitReview() {

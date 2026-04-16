@@ -174,6 +174,7 @@
               </div>
               <div class="product-actions-mobile">
                 <button class="cart-btn-mobile" type="button" (click)="addToCart(product)" aria-label="Ajouter"> <i class="pi pi-shopping-cart" aria-hidden="true"></i> Ajouter</button>
+                <a class="view-btn-mobile" [routerLink]="['/product', product.id]" aria-label="Voir détails"><i class="pi pi-eye" aria-hidden="true"></i></a>
                 <button class="wishlist-btn-mobile" type="button" [class.active]="isInWishlist(product.id)" (click)="addToWishlist(product)" aria-label="Favoris"><i class="pi pi-heart" aria-hidden="true"></i></button>
               </div>
             </div>

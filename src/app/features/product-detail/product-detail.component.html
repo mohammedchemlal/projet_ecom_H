@@ -114,43 +114,14 @@
               <i class="pi pi-shopping-cart" aria-hidden="true"></i>
               Ajouter au panier
             </button>
-            <button class="btn-wishlist" type="button" [attr.aria-pressed]="isInWishlist()" (click)="addToWishlist()" aria-label="Ajouter aux favoris">
+            <button class="btn-wishlist" type="button" [attr.aria-pressed]="isInWishlist()" (click)="onWishlistClick($event)" aria-label="Ajouter aux favoris">
               <i class="pi pi-heart" aria-hidden="true"></i>
               <span>{{ isInWishlist() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}</span>
             </button>
           </div>
 
           <!-- Product Features -->
-          <div class="product-features" aria-hidden="false">
-            <div class="feature">
-              <i class="pi pi-truck" aria-hidden="true"></i>
-              <div>
-                <strong>Livraison gratuite</strong>
-                <span>À partir de 500 DH d'achat</span>
-              </div>
-            </div>
-            <div class="feature">
-              <i class="pi pi-refresh" aria-hidden="true"></i>
-              <div>
-                <strong>Retours gratuits</strong>
-                <span>Sous 30 jours</span>
-              </div>
-            </div>
-            <div class="feature">
-              <i class="pi pi-lock" aria-hidden="true"></i>
-              <div>
-                <strong>Paiement sécurisé</strong>
-                <span>CB, PayPal, Apple Pay</span>
-              </div>
-            </div>
-            <div class="feature">
-              <i class="pi pi-gem" aria-hidden="true"></i>
-              <div>
-                <strong>Garantie 2 ans</strong>
-                <span>Certifiée</span>
-              </div>
-            </div>
-          </div>
+          
         </aside>
       </section>
 

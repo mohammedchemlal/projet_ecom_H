@@ -15,6 +15,7 @@ import { SliderModule } from 'primeng/slider';
 import { ProductService } from '../../core/services/product.service';
 import { CartService } from '../../core/services/cart.service';
 import { WishlistService } from '../../core/services/wishlist.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CategoryService } from '../../core/services/category.service';
 import { Product } from '../../shared/models/product.model';
 
@@ -85,6 +86,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
     private productService: ProductService,
     private cartService: CartService,
     private wishlistService: WishlistService,
+    private authService: AuthService,
     private categoryService: CategoryService,
     private route: ActivatedRoute,
     private router: Router
@@ -234,6 +236,12 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   addToWishlist(product: Product) {
+    if (!this.authService.isLoggedIn()) {
+      const returnUrl = `/product/${product.id}`;
+      window.location.assign(`/auth/register?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
     this.wishlistService.addToWishlist(product);
   }
 

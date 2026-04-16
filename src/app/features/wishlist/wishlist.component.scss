@@ -673,3 +673,55 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Very small screens tweaks */
+@media (max-width: 480px) {
+  .wishlist-page {
+    padding: 80px 0 32px;
+
+    .container {
+      padding: 0 0.75rem;
+    }
+
+    .summary-cards {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+
+      .summary-card {
+        min-width: 160px;
+        flex: 0 0 auto;
+      }
+    }
+
+    .wishlist-grid {
+      gap: 1rem;
+    }
+
+    .wishlist-card {
+      border-radius: 12px;
+      .product-image {
+        height: 200px;
+        img { object-fit: cover; }
+        .discount-badge { top: 0.75rem; right: 0.75rem; font-size: 0.75rem; padding: 0.2rem 0.5rem; }
+        .stock-badge { bottom: 0.75rem; left: 0.75rem; font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+      }
+
+      .product-info {
+        padding: 0.75rem;
+        .product-name { font-size: 0.95rem; }
+        .product-price .current-price { font-size: 1.05rem; }
+      }
+
+      .product-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-direction: column;
+
+        .cart-btn { padding: 0.65rem; }
+        .move-cart-btn, .remove-btn { height: 44px; }
+      }
+    }
+  }
+}

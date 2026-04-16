@@ -4,6 +4,7 @@
     <button pButton type="button" label="Nouvel utilisateur" icon="pi pi-plus" (click)="openNew()"></button>
   </header>
 
+  <div class="admin-table-wrapper">
   <p-table
     [value]="users()"
     [loading]="loading()"
@@ -54,7 +55,6 @@
         <th></th>
       </tr>
     </ng-template>
-
     <ng-template pTemplate="body" let-user>
       <tr>
         <td>{{ user.fullName }}</td>
@@ -76,6 +76,7 @@
       </tr>
     </ng-template>
   </p-table>
+  </div>
 
   <p-dialog
     [header]="isEditing() ? 'Modifier utilisateur' : 'Nouvel utilisateur'"

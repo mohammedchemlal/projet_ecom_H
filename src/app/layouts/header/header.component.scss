@@ -1,4 +1,4 @@
-// header.component.scss
+// header.component.scss - Version simplifiée et responsive
 .header {
   position: fixed;
   top: 0;
@@ -14,310 +14,172 @@
     backdrop-filter: blur(10px);
   }
   
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    
+    @media (min-width: 768px) {
+      padding: 0 2rem;
+    }
+  }
+  
   .header-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 0;
-    gap: 2rem;
-  }
-
-  /* make container relative so absolute dropdowns can position against it */
-  .container {
-    position: relative;
-  }
-
-  /* Ensure logo appears before menu and actions on desktop */
-  .order-menu {
-    order: 2;
-    flex: 1 1 0%;
-    display: flex;
-    align-items: center;
-    min-width: 0; /* allow children to ellipsize */
-  }
-
-  .order-logo {
-    order: 1;
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    margin-right: 1rem;
-  }
-
-  .header-actions {
-    order: 3;
+    padding: 0.75rem 0;
+    gap: 1rem;
+    
+    @media (min-width: 768px) {
+      padding: 1rem 0;
+      gap: 2rem;
+    }
   }
   
-  .logo {
+  // Menu hamburger
+  .mobile-menu-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
+    color: var(--text-dark);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
     
-    .logo-img {
-      height: 44px;
-      width: auto;
-      max-width: 180px;
-      object-fit: contain;
+    @media (min-width: 768px) {
+      display: none; // Caché sur desktop
     }
     
-    .logo-text {
+    &:active {
+      background: rgba(0,0,0,0.05);
+      transform: scale(0.95);
+    }
+    
+    i {
+      font-size: 1.3rem;
+    }
+  }
+  
+  // Logo
+  .logo-link {
+    text-decoration: none;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    
+    @media (min-width: 768px) {
+      flex: 0 0 auto;
+      justify-content: flex-start;
+    }
+    
+    .logo {
       display: flex;
       flex-direction: column;
-      line-height: 1.05;
-      gap: 2px;
-      color: var(--primary-color);
-
+      align-items: center;
+      line-height: 1.2;
+      
+      @media (min-width: 768px) {
+        align-items: flex-start;
+      }
+      
       .brand {
         font-family: var(--brand-font);
         font-size: 1.35rem;
-        font-weight: 700;
-        letter-spacing: 0.01em;
-        color: var(--text-dark);
+        font-weight: 600;
+        color: var(--primary-color);
+        letter-spacing: 0.2px;
+        
+        @media (min-width: 480px) {
+          font-size: 1.3rem;
+        }
       }
-
+      
       .tagline {
         font-family: var(--tagline-font);
-        font-size: 0.82rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--text-gray);
-        opacity: 0.9;
-      }
-    }
-
-    .mobile-menu-btn {
-      display: none;
-    }
-  }
-  
-  .desktop-nav {
-    flex: 1;
-    
-    .custom-menubar {
-      border: none;
-      background: transparent;
-      
-      ::ng-deep .p-menubar-root-list {
-        gap: 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: none;
+        color: var(--primary-color);
         
-        > .p-menuitem {
-          > .p-menuitem-link {
-            padding: 0.75rem 1rem;
-            font-weight: 500;
-            color: var(--text-dark);
-            transition: all 0.3s ease;
-            border-radius: 8px;
-            
-            &:hover {
-              background: rgba(var(--primary-rgb), 0.06);
-              color: var(--primary-color);
-            }
-          }
-          
-          &.p-menuitem-active > .p-menuitem-link {
-            background: var(--primary-color);
-            color: white;
-          }
+        @media (min-width: 480px) {
+          font-size: 0.7rem;
+        }
+        
+        @media (min-width: 768px) {
+          display: block;
         }
       }
     }
   }
-
-  /* PrimeNG menu overlay / submenu styling to match floating menu design */
-  ::ng-deep .p-menu-overlay,
-  ::ng-deep .p-tieredmenu .p-submenu,
-  ::ng-deep .p-submenu-list,
-  ::ng-deep .p-tieredmenu .p-menu-list {
-    /* use fixed so overlays are never clipped by parent overflow */
-    position: fixed !important;
-    border-radius: 10px !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
-    background: #ffffff !important;
-    padding: 6px !important;
-    min-width: 220px !important;
-    overflow: visible !important;
-    z-index: 2000 !important;
-  }
-
-  ::ng-deep .p-menuitem {
-    list-style: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  ::ng-deep .p-menuitem > .p-menuitem-link {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    padding: 0.55rem 0.85rem !important;
-    border-radius: 8px !important;
-    color: var(--text-dark) !important;
-    font-weight: 600 !important;
-  }
-
-  ::ng-deep .p-menuitem .p-menuitem-icon,
-  ::ng-deep .p-menuitem .pi {
-    width: 28px !important;
-    height: 28px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    border-radius: 8px !important;
-    background: rgba(var(--primary-rgb), 0.04) !important;
-    color: var(--text-dark) !important;
-    font-size: 1.05rem !important;
-  }
-
-  ::ng-deep .p-menuitem:hover > .p-menuitem-link,
-  ::ng-deep .p-menuitem.p-menuitem-active > .p-menuitem-link {
-    background: rgba(0,0,0,0.04) !important;
-    color: var(--primary-color) !important;
-  }
-
-  /* Ensure menubar submenus (categories) display fully and selectable */
-  ::ng-deep .p-menubar .p-submenu,
-  ::ng-deep .p-menubar .p-submenu-list,
-  ::ng-deep .p-menubar .p-tieredmenu-root-list {
-    position: absolute !important;
-    left: auto !important;
-    right: auto !important;
-    min-width: 240px !important;
-    max-width: 320px !important;
-    white-space: nowrap !important;
-    z-index: 1400 !important;
-  }
-
-  /* Mega menu layout for items with .mega-parent */
-  ::ng-deep .p-menubar .mega-parent > .p-submenu .p-submenu-list {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
-    gap: 0.5rem 1rem !important;
-    padding: 0.75rem !important;
-    min-width: 300px !important;
-    max-width: 520px !important;
-    background: linear-gradient(180deg, rgba(255,255,255,0.98), white) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 18px 40px rgba(0,0,0,0.12) !important;
-    transform-origin: top left !important;
-    transition: transform 0.18s ease, opacity 0.18s ease !important;
-  }
-
-  /* make each category item look like a card with icon and label */
-  ::ng-deep .p-menubar .mega-parent > .p-submenu .p-menuitem-link {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.8rem !important;
-    padding: 0.6rem !important;
-    border-radius: 8px !important;
-    background: transparent !important;
-    color: var(--text-dark) !important;
-    font-weight: 600 !important;
-  }
-
-  ::ng-deep .p-menubar .mega-parent > .p-submenu .p-menuitem-link i {
-    font-size: 1.15rem !important;
-    width: 34px !important;
-    height: 34px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: rgba(var(--primary-rgb), 0.04) !important;
-    border-radius: 8px !important;
-  }
-
-  /* subtle appear animation */
-  ::ng-deep .p-menubar .p-submenu[style] {
-    opacity: 0; transform: translateY(6px) scale(0.98);
-  }
-  ::ng-deep .p-menubar .p-submenu[style].ng-trigger {
-    opacity: 1; transform: translateY(0) scale(1);
-  }
-
-  /* Offset submenus slightly to the right for comfortable margin */
-  ::ng-deep .p-menubar .p-submenu,
-  ::ng-deep .p-menubar .p-submenu-list {
-    transform: translateX(6px) !important;
-  }
-
-  /* Ensure submenu aligns under its parent menu item when possible */
-  ::ng-deep .p-menubar-root-list > .p-menuitem {
-    position: relative !important;
-  }
-
-  ::ng-deep .p-menubar-root-list > .p-menuitem .p-submenu {
-    left: 0 !important;
-    transform: translateX(0) !important;
-  }
-
-  ::ng-deep .p-menubar .p-submenu .p-menuitem-link,
-  ::ng-deep .p-menubar .p-submenu-list .p-menuitem-link {
-    display: flex !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-    padding: 0.65rem 0.9rem !important;
-    color: var(--text-dark) !important;
-    background: transparent !important;
-    border-radius: 8px !important;
-  }
-
-  ::ng-deep .p-menubar .p-submenu .p-menuitem-link:hover {
-    background: rgba(0,0,0,0.04) !important;
-    color: var(--primary-color) !important;
-  }
-
-  /* If submenu items contain icons, keep them visible and aligned */
-  ::ng-deep .p-menubar .p-menuitem .pi,
-  ::ng-deep .p-menubar .p-submenu .p-menuitem .pi {
-    width: 28px !important;
-    height: 28px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: rgba(var(--primary-rgb), 0.03) !important;
-    border-radius: 6px !important;
-  }
   
+  // Actions
   .header-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0;
+    
+    @media (min-width: 480px) {
+      gap: 0.75rem;
+    }
     
     .action-btn {
       position: relative;
       background: transparent;
       border: none;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       color: var(--text-dark);
       
-      &:hover {
-        background: rgba(var(--primary-rgb), 0.10);
-        color: var(--primary-color);
+      @media (min-width: 480px) {
+        width: 40px;
+        height: 40px;
+      }
+      
+      &:active {
+        transform: scale(0.95);
       }
       
       i {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
+        
+        @media (min-width: 480px) {
+          font-size: 1.2rem;
+        }
       }
       
       .badge {
         position: absolute;
-        top: -5px;
-        right: -5px;
+        top: -2px;
+        right: -2px;
         background: var(--primary-color);
         color: white;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 600;
-        padding: 2px 6px;
+        padding: 2px 5px;
         border-radius: 20px;
-        min-width: 18px;
+        min-width: 16px;
+        
+        @media (min-width: 480px) {
+          top: -5px;
+          right: -5px;
+          font-size: 0.7rem;
+          padding: 2px 6px;
+          min-width: 18px;
+        }
       }
     }
     
@@ -325,310 +187,310 @@
       background: var(--primary-color);
       color: white;
       
-      &:hover {
-        background: var(--primary-dark);
-        transform: translateY(-2px);
+      &:active {
+        transform: scale(0.95);
       }
     }
     
-    .user-btn {
-      ::ng-deep .p-button {
+    // User dropdown
+    .user-dropdown {
+      position: relative;
+      
+      .user-btn {
         background: transparent;
         border: 1px solid var(--border-color);
-        color: var(--text-dark);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
         
-        &:hover {
-          background: rgba(var(--primary-rgb), 0.06);
-          border-color: var(--primary-color);
+        @media (min-width: 480px) {
+          width: 40px;
+          height: 40px;
+        }
+        
+        &:active {
+          transform: scale(0.95);
+        }
+        
+        .avatar {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--primary-color);
+        }
+        
+        i {
+          font-size: 1rem;
+          
+          @media (min-width: 480px) {
+            font-size: 1.1rem;
+          }
+        }
+      }
+      
+      .user-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        min-width: 200px;
+        z-index: 50;
+        padding: 0.35rem 0.25rem;
+        list-style: none;
+        margin: 0;
+        
+        &::before {
+          content: '';
+          position: absolute;
+          top: -7px;
+          right: 16px;
+          width: 12px;
+          height: 12px;
+          background: white;
+          transform: rotate(45deg);
+          border-left: 1px solid var(--border);
+          border-top: 1px solid var(--border);
+          border-radius: 2px;
+        }
+        
+        .menu-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          width: 100%;
+          padding: 0.65rem 0.9rem;
+          text-align: left;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          color: var(--text-dark);
+          font-weight: 600;
+          font-size: 0.9rem;
+          
+          &:active {
+            background: rgba(0,0,0,0.05);
+          }
+          
+          i {
+            width: 28px;
+            font-size: 1rem;
+          }
+          .menu-badge {
+            margin-left: auto;
+            background: var(--primary-color);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            min-width: 22px;
+            text-align: center;
+          }
+        }
+        
+        .menu-separator {
+          border: none;
+          height: 1px;
+          background: var(--border);
+          margin: 0.25rem 0;
         }
       }
     }
   }
   
-  .search-bar {
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    
-    &.active {
-      max-height: 100px;
-      padding-bottom: 1rem;
-    }
-    
-    .search-container {
-      position: relative;
-      max-width: 600px;
-      margin: 0 auto;
-      
-      .search-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--text-gray);
-        z-index: 1;
-      }
-      
-      .search-input {
-        width: 100%;
-        padding: 0.75rem 1rem 0.75rem 2.5rem;
-        border: 2px solid var(--border-color);
-        border-radius: 12px;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-        
-        &:focus {
-          outline: none;
-          border-color: var(--primary-color);
-          box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
-        }
-      }
-      
-      .search-btn {
-        position: absolute;
-        right: 0.5rem;
-        top: 50%;
-        transform: translateY(-50%);
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        
-        &:hover {
-          background: var(--primary-dark);
-        }
-      }
-    }
-  }
-}
-
-/* User dropdown styles */
-.user-dropdown {
-  position: relative;
-
-  .user-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: transparent;
-    border: 1px solid transparent;
-    padding: 0.35rem 0.6rem;
-    border-radius: 999px;
-    cursor: pointer;
-  }
-
-  .avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    background: var(--primary-light);
-    color: white;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-  }
-
-  .user-name {
-    font-weight: 600;
-  }
-
-  .user-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 8px);
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-    min-width: 220px;
-    z-index: 50;
-    padding: 0.35rem 0.25rem;
-    list-style: none;
-    margin: 0;
-
-    li {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      width: 100%;
-      padding: 0.65rem 0.9rem;
-      text-align: left;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      color: var(--text-dark);
-      font-weight: 600;
-
-      i {
-        width: 28px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.05rem;
-        color: var(--text-dark);
-      }
-    }
-
-    .menu-separator {
-      border: none;
-      height: 1px;
-      background: var(--border);
-      margin: 0.25rem 0;
-    }
-  }
-
-  /* caret for user dropdown */
-  .user-dropdown .user-menu::before {
-    content: '';
-    position: absolute;
-    top: -7px;
-    right: 24px;
-    width: 12px;
-    height: 12px;
-    background: white;
-    transform: rotate(45deg);
-    border-left: 1px solid var(--border);
-    border-top: 1px solid var(--border);
-    box-shadow: -6px -6px 10px rgba(0,0,0,0.03);
-    z-index: 0;
-    border-radius: 2px;
-  }
-}
-
-@media (max-width: 768px) {
-  /* On mobile keep the menu/hamburger before the site name */
-  .order-menu {
-    order: 1;
-  }
-
-  .order-logo {
-    order: 2;
-    margin-right: 0;
-    margin-left: 0.5rem;
-  }
-
-  .header-actions {
-    order: 3;
-  }
-
+  // Desktop navigation (cachée sur mobile)
   .desktop-nav {
     display: none;
-  }
 
-  .logo {
-    .logo-img {
-      height: 40px;
-      max-width: 150px;
+    @media (min-width: 768px) {
+      display: block;
+      flex: 1 1 auto;
+      margin-left: 1.5rem;
     }
 
-    .logo-text {
-      .tagline {
-        display: none;
+    .custom-menubar {
+      border: none;
+      background: transparent;
+
+      ::ng-deep .p-menubar-root-list {
+        gap: 0.5rem;
+        justify-content: flex-start; /* align left next to logo */
+
+        > .p-menuitem > .p-menuitem-link {
+          padding: 0.6rem 1rem;
+          font-weight: 500;
+          border-radius: 8px;
+
+          &:hover {
+            background: rgba(var(--primary-rgb), 0.06);
+          }
+        }
       }
     }
   }
-
-  .mobile-menu-btn {
-    display: inline-flex;
-    width: 40px;
-    height: 40px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: transparent;
-    border: none;
-    color: var(--text-dark);
-    font-size: 1.05rem;
-  }
-
-  .header-actions .action-btn:not(.mobile-menu-btn) {
-    display: inline-flex;
-  }
-
+  
+  // Mobile navigation flottante
   .mobile-nav {
     position: fixed;
+    top: 64px;
     left: 12px;
-    top: calc(64px + 8px); /* anchored to viewport under header */
     z-index: 1200;
     background: white;
     border-radius: 12px;
     box-shadow: 0 12px 34px rgba(0,0,0,0.14);
     padding: 0.5rem;
-    min-width: 160px;
-    max-width: 240px;
-    overflow: visible;
-    max-height: calc(100vh - 96px);
+    min-width: 200px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
-    /* caret pointing to the hamburger */
+    animation: slideIn 0.2s ease;
+    
+    @media (min-width: 480px) {
+      min-width: 240px;
+    }
+    
     &::before {
       content: '';
       position: absolute;
       top: -7px;
-      left: 24px;
+      left: 20px;
       width: 12px;
       height: 12px;
       background: white;
       transform: rotate(45deg);
       border-left: 1px solid var(--border);
       border-top: 1px solid var(--border);
-      box-shadow: -6px -6px 10px rgba(0,0,0,0.03);
-      z-index: 1199;
       border-radius: 2px;
     }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   }
-
+  
   .mobile-menu {
     list-style: none;
     margin: 0;
-    padding: 0.25rem 0;
-
+    padding: 0;
+    
+    > li {
+      margin-bottom: 0.25rem;
+    }
+    
     .mobile-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
       width: 100%;
       text-align: left;
       background: transparent;
       border: none;
-      padding: 0.65rem 0.9rem;
+      padding: 0.7rem 0.9rem;
       font-weight: 600;
       color: var(--text-dark);
       border-radius: 8px;
-      display: block;
       cursor: pointer;
-
-      &:hover {
+      font-size: 0.95rem;
+      
+      i {
+        width: 24px;
+        font-size: 1.1rem;
+      }
+      
+      &:active {
         background: rgba(var(--primary-rgb), 0.06);
-        color: var(--primary-color);
       }
     }
-
+    
     .mobile-submenu {
-      padding-left: 0.9rem;
+      padding-left: 2rem;
       margin-top: 0.25rem;
-
+      margin-bottom: 0.25rem;
+      
       .mobile-submenu-item {
         display: block;
         width: 100%;
-        padding: 0.45rem 0.9rem;
+        padding: 0.5rem 0.9rem;
         background: transparent;
         border: none;
         text-align: left;
         color: var(--text-gray);
         cursor: pointer;
-
-        &:hover {
+        font-size: 0.9rem;
+        
+        &:active {
           color: var(--primary-color);
         }
       }
     }
+  }
+  
+  // Overlay
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1100;
+    animation: fadeIn 0.2s ease;
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  }
+}
+
+// Très petits écrans
+@media (max-width: 380px) {
+  .header {
+    .header-actions {
+      gap: 0.25rem;
+      
+      .action-btn {
+        width: 32px;
+        height: 32px;
+        
+        i {
+          font-size: 1rem;
+        }
+      }
+    }
+    
+    .logo-link .logo .brand {
+      font-size: 1rem;
+    }
+  }
+}
+
+/* Dark mode fixes for icons on mobile devices where system dark theme is active */
+@media (prefers-color-scheme: dark) {
+  .header {
+    background: rgba(10,10,10,0.85);
+
+    .action-btn {
+      color: #ffffff;
+      i { color: #ffffff; }
+    }
+
+    .user-btn { border-color: rgba(255,255,255,0.06); i { color: #ffffff; } .avatar { color: #ffffff; } }
+
+    .desktop-nav ::ng-deep .p-menubar-root-list > .p-menuitem > .p-menuitem-link { color: #ffffff; }
   }
 }

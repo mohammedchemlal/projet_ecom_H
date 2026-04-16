@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@400;600;700&display=swap');
 @import 'primeflex/primeflex.css';
 @import 'primeicons/primeicons.css';
+@import 'app/admin/admin-common.scss';
 
 :root {
 	--brand-font: 'ValeryaLogo', 'Playfair Display', serif;
@@ -173,6 +174,83 @@ main {
 .p-button {
 	border-radius: 999px;
 	transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Ensure icons remain visible in dark mode across the site */
+@media (prefers-color-scheme: dark) {
+	i, .pi, .pi * {
+		color: #ffffff !important;
+		fill: #ffffff !important;
+		stroke: #ffffff !important;
+		opacity: 0.95 !important;
+	}
+
+	svg {
+		fill: #ffffff !important;
+		stroke: #ffffff !important;
+	}
+
+	/* Badges and icon buttons */
+	.badge, .action-btn, .p-button, .btn-primary, .btn-outline {
+		color: inherit !important;
+	}
+
+	/* Inline icon images (PNG/SVG) — invert to improve visibility on dark backgrounds */
+	img.icon, .icon img {
+		filter: brightness(0) invert(1) contrast(0.95);
+	}
+
+	/* Ensure text on dark backgrounds remains legible */
+	body, .header, .p-card, .mobile-nav, .user-menu {
+		color: #ffffff;
+	}
+}
+
+/* Ensure PrimeIcons font is applied and icons render correctly */
+.pi, i[class^="pi-"], i[class*=" pi-"] {
+	font-family: PrimeIcons, "primeicons", "PrimeIcons" !important;
+	speak: none;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	/* Ensure icon glyphs render using current color and stay visible */
+	color: currentColor;
+	-webkit-text-fill-color: currentColor;
+	text-rendering: geometricPrecision;
+}
+
+/* Ensure pseudo-elements used by icon fonts are visible */
+.pi::before, i::before {
+	color: inherit;
+	/* force visibility for pseudo-element glyphs used by icon fonts */
+	opacity: 1 !important;
+	-webkit-text-fill-color: inherit !important;
+}
+
+/* Additional dark-mode reinforcement for devices where inherited rules are
+   overridden by component-level styles or browser quirks. Keeps icons visible */
+@media (prefers-color-scheme: dark) {
+	/* User request: render icons in black even when OS in dark mode.
+	   Warning: black icons on dark backgrounds may have low contrast. */
+	.pi, i[class^="pi-"], i[class*=" pi-"] {
+		color: #000000 !important;
+		-webkit-text-fill-color: #000000 !important;
+		text-shadow: none !important;
+	}
+
+	.pi::before, i::before {
+		color: #000000 !important;
+		opacity: 1 !important;
+	}
+
+	/* Do not invert embedded icon images when user prefers black icons */
+	img.icon, .icon img {
+		filter: none !important;
+	}
 }
 
 .p-button:hover {

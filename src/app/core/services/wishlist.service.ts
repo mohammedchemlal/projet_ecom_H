@@ -87,7 +87,12 @@ export class WishlistService {
   }
 
   toggle(product: Product): void {
-    this.addToWishlist(product);
+    const exists = this.isInWishlist(product.id);
+    if (exists) {
+      this.removeFromWishlist(product.id);
+    } else {
+      this.addToWishlist(product);
+    }
   }
 
   clear(): void {

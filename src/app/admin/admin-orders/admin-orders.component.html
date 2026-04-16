@@ -35,6 +35,7 @@
     ></p-select>
   </div>
 
+  <div class="admin-table-wrapper">
   <p-table
     class="orders-table"
     [value]="orders()"
@@ -110,6 +111,7 @@
         </tr>
       </ng-template>
     </p-table>
+  </div>
 
   <p-dialog
     [visible]="orderDetailVisible()"
@@ -164,7 +166,7 @@
                 <td class="right">{{ formatCurrency(getOrderItemPrice(item) * item.quantity) }}</td>
               </tr>
             </ng-template>
-          </p-table>
+            </p-table>
         </div>
 
         <aside class="order-right">

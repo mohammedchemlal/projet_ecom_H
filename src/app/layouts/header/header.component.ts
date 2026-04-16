@@ -1,4 +1,5 @@
-import { Component, HostListener, OnInit, ElementRef, ViewChild } from '@angular/core';
+// header.component.ts - Version améliorée
+import { Component, HostListener, OnInit, ElementRef, ViewChild, Renderer2 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -10,6 +11,7 @@ import { MenubarModule } from 'primeng/menubar';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { CartService } from '../../core/services/cart.service';
 import { AuthService } from '../../core/services/auth.service';
+import { OrderService } from '../../core/services/order.service';
 
 @Component({
   selector: 'app-header',
@@ -27,11 +29,10 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrls: ['./header.component.scss'],
 })
 export class HeaderComponent implements OnInit {
-  logoLoadFailed: boolean = false;
-
   items: MenuItem[] = [];
   cartCount: number = 0;
   wishlistCount: number = 0;
+  ordersCount: number = 0;
   userMenu: MenuItem[] = [];
   currentUser: any = null;
   userMenuVisible = false;
@@ -40,6 +41,7 @@ export class HeaderComponent implements OnInit {
   showSearchBar: boolean = false;
   showMobileMenu: boolean = false;
   mobileNavLeft: number = 12;
+  private clickOutsideListener: (() => void) | null = null;
 
   @ViewChild('mobileBtn', { read: ElementRef }) mobileBtn?: ElementRef;
   @ViewChild('mobileNav', { read: ElementRef }) mobileNav?: ElementRef;
@@ -48,6 +50,8 @@ export class HeaderComponent implements OnInit {
     private router: Router,
     private cartService: CartService,
     private authService: AuthService,
+    private orderService: OrderService,
+    private renderer: Renderer2
   ) {}
 
   ngOnInit() {
@@ -61,19 +65,59 @@ export class HeaderComponent implements OnInit {
     this.isScrolled = window.scrollY > 50;
   }
 
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event) {
+    // Fermer le menu utilisateur si clic en dehors
+    if (this.userMenuVisible) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-dropdown')) {
+        this.userMenuVisible = false;
+      }
+    }
+    
+    // Fermer le menu mobile si clic en dehors
+    if (this.showMobileMenu) {
+      const target = event.target as HTMLElement;
+      const mobileNav = this.mobileNav?.nativeElement;
+      const mobileBtn = this.mobileBtn?.nativeElement;
+      
+      if (mobileNav && mobileBtn) {
+        if (!mobileNav.contains(target) && !mobileBtn.contains(target)) {
+          this.closeMobileMenu();
+        }
+      }
+    }
+    
+    // Fermer la search bar si clic en dehors
+    if (this.showSearchBar) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.search-bar') && !target.closest('.action-btn')) {
+        this.showSearchBar = false;
+      }
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    // Fermer le menu mobile sur resize
+    if (window.innerWidth > 768 && this.showMobileMenu) {
+      this.closeMobileMenu();
+    }
+  }
+
   initMenu() {
     this.items = [
       {
         label: 'Accueil',
         icon: 'pi pi-home',
         routerLink: '/home',
-        command: () => this.router.navigate(['/home']),
+        command: () => this.navigateAndClose('/home'),
       },
       {
         label: 'Produits',
         icon: 'pi pi-box',
         routerLink: '/products',
-        command: () => this.router.navigate(['/products']),
+        command: () => this.navigateAndClose('/products'),
       },
       {
         label: 'Catégories',
@@ -83,20 +127,17 @@ export class HeaderComponent implements OnInit {
           {
             label: 'Colliers',
             icon: 'pi pi-gem',
-            command: () =>
-              this.router.navigate(['/products'], { queryParams: { category: 'necklaces' } }),
+            command: () => this.navigateAndClose('/products', { category: 'necklaces' }),
           },
           {
             label: 'Bagues',
             icon: 'pi pi-circle',
-            command: () =>
-              this.router.navigate(['/products'], { queryParams: { category: 'rings' } }),
+            command: () => this.navigateAndClose('/products', { category: 'rings' }),
           },
           {
             label: 'Bracelets',
             icon: 'pi pi-link',
-            command: () =>
-              this.router.navigate(['/products'], { queryParams: { category: 'bracelets' } }),
+            command: () => this.navigateAndClose('/products', { category: 'bracelets' }),
           },
         ],
       },
@@ -107,6 +148,10 @@ export class HeaderComponent implements OnInit {
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
       if (user) {
+        // update orders count for current user
+        this.orderService.getUserOrders().subscribe((orders) => {
+          this.ordersCount = orders?.length ?? 0;
+        });
         this.userMenu = [
           { label: 'Mon Profil', icon: 'pi pi-user', routerLink: '/profile' },
           { label: 'Mes Commandes', icon: 'pi pi-shopping-bag', routerLink: '/profile' },
@@ -138,12 +183,15 @@ export class HeaderComponent implements OnInit {
     try {
       if (entry.command) {
         (entry.command as any)();
+      } else if (entry.label === 'Mes Commandes') {
+        // navigate to profile and open orders tab
+        this.router.navigate(['/profile'], { queryParams: { tab: 'orders' } });
       } else if (entry.routerLink) {
         const rl: any = entry.routerLink;
         this.router.navigate(Array.isArray(rl) ? rl : [rl]);
       }
     } catch (e) {
-      // ignore
+      console.error('Error handling user menu entry:', e);
     } finally {
       this.userMenuVisible = false;
     }
@@ -158,6 +206,7 @@ export class HeaderComponent implements OnInit {
   logout() {
     this.authService.logout();
     this.router.navigate(['/home']);
+    this.userMenuVisible = false;
   }
 
   search() {
@@ -177,45 +226,68 @@ export class HeaderComponent implements OnInit {
   }
 
   toggleMobileMenu() {
-    // when opening, compute left position of the hamburger to anchor the floating menu
     if (!this.showMobileMenu) {
-      setTimeout(() => {
-        try {
-          const btn = this.mobileBtn?.nativeElement as HTMLElement;
-          const menu = this.mobileNav?.nativeElement as HTMLElement;
-          if (btn && menu) {
-            const rect = btn.getBoundingClientRect();
-            // initial left anchored to the button
-            let left = Math.round(rect.left + window.scrollX - 6);
-            // ensure the menu fits in the viewport: if overflow to right, shift left
-            const menuWidth = Math.min(menu.offsetWidth || 200, window.innerWidth - 24);
-            const maxLeft = Math.max(8, window.innerWidth - menuWidth - 12);
-            if (left > maxLeft) left = maxLeft;
-            if (left < 8) left = 8;
-            this.mobileNavLeft = left;
-          }
-        } catch (e) {
-          // ignore measurement errors
-        }
-      }, 0);
+      this.openMobileMenu();
+    } else {
+      this.closeMobileMenu();
     }
-
-    this.showMobileMenu = !this.showMobileMenu;
+  }
+  
+  private openMobileMenu() {
+    setTimeout(() => {
+      try {
+        const btn = this.mobileBtn?.nativeElement as HTMLElement;
+        const menu = this.mobileNav?.nativeElement as HTMLElement;
+        if (btn && menu) {
+          const rect = btn.getBoundingClientRect();
+          let left = Math.round(rect.left + window.scrollX - 6);
+          const menuWidth = Math.min(menu.offsetWidth || 200, window.innerWidth - 24);
+          const maxLeft = Math.max(8, window.innerWidth - menuWidth - 12);
+          if (left > maxLeft) left = maxLeft;
+          if (left < 8) left = 8;
+          this.mobileNavLeft = left;
+        }
+      } catch (e) {
+        console.error('Error positioning mobile menu:', e);
+      }
+    }, 0);
+    
+    this.showMobileMenu = true;
+    this.disableBodyScroll();
+  }
+  
+  closeMobileMenu() {
+    this.showMobileMenu = false;
+    this.enableBodyScroll();
+  }
+  
+  private disableBodyScroll() {
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+  }
+  
+  private enableBodyScroll() {
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
   }
 
   navigateToItem(item: MenuItem) {
+    this.navigateAndClose(item.routerLink as string, item.queryParams);
+  }
+  
+  private navigateAndClose(routerLink: string, queryParams?: any) {
     try {
-      if (item.command) {
-        // MenuItem.command might expect an event; call safely
-        (item.command as any)();
-      } else if (item.routerLink) {
-        const rl: any = item.routerLink;
-        this.router.navigate(Array.isArray(rl) ? rl : [rl]);
+      if (queryParams) {
+        this.router.navigate([routerLink], { queryParams });
+      } else if (routerLink) {
+        this.router.navigate([routerLink]);
       }
     } catch (e) {
-      // fallback: close mobile menu and ignore
+      console.error('Navigation error:', e);
     } finally {
-      this.showMobileMenu = false;
+      this.closeMobileMenu();
     }
   }
 }

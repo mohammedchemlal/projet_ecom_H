@@ -9,7 +9,8 @@
     <button pButton type="button" label="Nouveau code" icon="pi pi-plus" (click)="openNew()"></button>
   </header>
 
-  <p-table [value]="visiblePromoCodes()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
+  <div class="admin-table-wrapper">
+    <p-table [value]="visiblePromoCodes()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
     <ng-template pTemplate="header">
       <tr>
         <th>Code</th>
@@ -50,7 +51,8 @@
         </td>
       </tr>
     </ng-template>
-  </p-table>
+    </p-table>
+  </div>
 
   <p-dialog
     [visible]="promoDialog()"

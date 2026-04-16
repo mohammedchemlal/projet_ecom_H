@@ -547,6 +547,25 @@
                   border-color: var(--danger);
                 }
               }
+ 
+              .view-btn-mobile {
+                width: 38px;
+                height: 38px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--text-dark);
+                text-decoration: none;
+                transition: all 0.2s ease;
+
+                &:hover {
+                  color: var(--primary-color);
+                  transform: translateY(-2px);
+                }
+              }
             }
           }
         }

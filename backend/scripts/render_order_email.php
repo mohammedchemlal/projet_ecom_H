@@ -34,10 +34,19 @@ $order->items = [
     ],
 ];
 
+// Build a User model for the mailable. If another part of the code
+// provides a stdClass/array, coerce it into a User instance so the
+// type-hinted `App\Models\User` is always satisfied.
 $customer = new \App\Models\User();
 $customer->full_name = 'Client Test';
 $customer->email = 'client@example.test';
 $customer->address = 'Adresse facturation';
+
+if (! $customer instanceof \App\Models\User) {
+    // Convert stdClass or array to attributes array then create a User
+    $attrs = is_object($customer) ? (array) $customer : (array) $customer;
+    $customer = new \App\Models\User($attrs);
+}
 
 $recipients = array_filter(array_map('trim', explode(',', env('ADMIN_EMAIL'))));
 Mail::to($recipients)->send(new \App\Mail\OrderPlaced($order, $customer));

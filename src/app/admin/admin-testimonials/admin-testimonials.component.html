@@ -9,7 +9,8 @@
     <button pButton type="button" label="Nouveau témoignage" icon="pi pi-plus" (click)="openNew()"></button>
   </header>
 
-  <p-table [value]="testimonials()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
+  <div class="admin-table-wrapper">
+    <p-table [value]="testimonials()" [loading]="loading()" responsiveLayout="scroll" styleClass="p-datatable-gridlines p-datatable-sm">
     <ng-template pTemplate="header">
       <tr>
         <th>Client</th>
@@ -49,7 +50,8 @@
         </td>
       </tr>
     </ng-template>
-  </p-table>
+    </p-table>
+  </div>
 
   <p-dialog
     [visible]="dialogVisible()"

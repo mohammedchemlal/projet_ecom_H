@@ -67,7 +67,8 @@
         <h3>Commandes récentes</h3>
         <button class="view-all" routerLink="/admin/orders">Voir tout</button>
       </div>
-      <p-table [value]="recentOrders" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
+      <div class="admin-table-wrapper">
+        <p-table [value]="recentOrders" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
         <ng-template pTemplate="header">
           <tr>
             <th>N° Commande</th>
@@ -86,7 +87,8 @@
             </td>
           </tr>
         </ng-template>
-      </p-table>
+        </p-table>
+      </div>
     </div>
 
     <div class="table-card">
@@ -94,7 +96,8 @@
         <h3>Stock faible</h3>
         <button class="view-all" routerLink="/admin/products">Voir tout</button>
       </div>
-      <p-table [value]="lowStockProducts" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
+      <div class="admin-table-wrapper">
+        <p-table [value]="lowStockProducts" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
         <ng-template pTemplate="header">
           <tr>
             <th>Produit</th>
@@ -114,7 +117,8 @@
             </td>
           </tr>
         </ng-template>
-      </p-table>
+        </p-table>
+      </div>
     </div>
   </div>
 </div>

@@ -67,6 +67,24 @@ export class HomeComponent implements OnInit {
       numScroll: 1
     }
   ];
+  // Ajoutez cette propriété dans votre composant
+heroResponsiveOptions = [
+  {
+    breakpoint: '1024px',
+    numVisible: 1,
+    numScroll: 1
+  },
+  {
+    breakpoint: '768px',
+    numVisible: 1,
+    numScroll: 1
+  },
+  {
+    breakpoint: '560px',
+    numVisible: 1,
+    numScroll: 1
+  }
+];
 
   heroSlides = [
     {
@@ -76,7 +94,8 @@ export class HomeComponent implements OnInit {
       priority: true,
       title: 'Nouvelles Arrivées 2026',
       subtitle: "Élégance et savoir-faire — pièces sélectionnées avec soin",
-      cta: 'Découvrir la collection'
+      cta: 'Découvrir la collection',
+      align: 'right'
     },
     {
       // Fallback: reuse first hero if a third image is not yet available
@@ -85,7 +104,8 @@ export class HomeComponent implements OnInit {
       priority: false,
       title: 'Offres Exclusives',
       subtitle: 'Profitez des remises saisonnières sur une sélection premium',
-      cta: 'Profiter maintenant'
+      cta: 'Profiter maintenant',
+      align: 'right'
     }
   ];
 
@@ -242,6 +262,13 @@ export class HomeComponent implements OnInit {
   }
 
   addToWishlist(product: Product): void {
+    // If user not logged in, redirect to registration page with returnUrl
+    if (!this.authService.isLoggedIn()) {
+      const returnUrl = `/product/${product.id}`;
+      window.location.assign(`/auth/register?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+
     this.wishlistService.addToWishlist(product);
   }
 
