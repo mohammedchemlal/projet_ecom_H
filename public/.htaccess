@@ -6,9 +6,20 @@
   RewriteRule ^(robots\.txt|sitemap\.xml)$ - [L]
 
   # If request is for existing file or directory, serve it
+  # If request is for existing file, directory, or symbolic link, serve it
   RewriteCond %{REQUEST_FILENAME} -f [OR]
+  # Also allow symbolic links to be treated as existing files
+  RewriteCond %{REQUEST_FILENAME} -l [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
+
+  # If request is to Laravel front controller or API, forward to index.php
+  RewriteCond %{REQUEST_URI} ^/index\.php [OR]
+  RewriteCond %{REQUEST_URI} ^/api/
+  RewriteRule ^ index.php [L]
+
+  # Allow direct access to storage files (do not rewrite to SPA)
+  RewriteRule ^storage/ - [L]
 
   # Otherwise rewrite to client entry (index.csr.html)
   RewriteRule ^ /index.csr.html [L]

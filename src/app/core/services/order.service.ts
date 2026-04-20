@@ -226,7 +226,18 @@ export class OrderService {
     return this.http.get<ApiOrder[]>(this.apiUrl, { headers: this.authHeaders }).pipe(
       map((orders) => orders.map((order) => this.mapApiOrder(order))),
       tap((orders) => this.persist(orders)),
-      catchError(() => of(this.ordersSubject.value))
+      catchError((error) => {
+        console.error('Failed to refresh orders from API:', error);
+        // If unauthorized, clear local orders cache to avoid showing stale/demo data
+        if (error instanceof HttpErrorResponse && error.status === 401) {
+          if (this.isBrowser) {
+            localStorage.removeItem('orders');
+          }
+          this.ordersSubject.next([]);
+        }
+
+        return of([] as Order[]);
+      })
     );
   }
 

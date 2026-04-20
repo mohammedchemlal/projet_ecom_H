@@ -54,125 +54,8 @@ export class ProductService {
   private readonly apiUrl = `${environment.apiUrl}/products`;
   private readonly optimistic = inject(OptimisticService);
 
-  private readonly productsSubject = new BehaviorSubject<Product[]>([
-    {
-      id: 1,
-      name: 'Collier Élégance Dorée',
-      description: 'Superbe collier en or 18 carats avec pendentif en diamant. Parfait pour les occasions spéciales.',
-      price: 299.99,
-      discountPrice: 199.99,
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600',
-      images: [
-        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600',
-        'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600',
-        'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600'
-      ],
-      category: 'necklaces',
-      rating: 4.8,
-      reviewCount: 124,
-      stock: 15,
-      isActive: true,
-      isPromotion: true,
-      promotionPercentage: 33,
-      createdAt: new Date()
-    },
-    {
-      id: 2,
-      name: 'Bague Solitaire Argent',
-      description: 'Bague en argent sterling avec pierre précieuse. Design élégant et intemporel.',
-      price: 149.99,
-      image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600',
-      images: [
-        'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600',
-        'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?w=600'
-      ],
-      category: 'rings',
-      rating: 4.9,
-      reviewCount: 89,
-      stock: 23,
-      isActive: true,
-      isPromotion: false,
-      createdAt: new Date()
-    },
-    {
-      id: 3,
-      name: 'Bracelet Chaîne Or Rose',
-      description: 'Bracelet fin en or rose avec fermoir sécurité. Idéal pour un usage quotidien.',
-      price: 89.99,
-      discountPrice: 71.99,
-      image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600',
-      images: [
-        'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600',
-        'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=600'
-      ],
-      category: 'bracelets',
-      rating: 4.7,
-      reviewCount: 56,
-      stock: 30,
-      isActive: true,
-      isPromotion: true,
-      promotionPercentage: 20,
-      createdAt: new Date()
-    },
-    {
-      id: 5,
-      name: 'Collier Cœur Éternel',
-      description: 'Collier avec pendentif coeur en or blanc. Cadeau parfait pour la Saint-Valentin.',
-      price: 199.99,
-      discountPrice: 159.99,
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600',
-      images: [
-        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600',
-        'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600'
-      ],
-      category: 'necklaces',
-      rating: 4.9,
-      reviewCount: 234,
-      stock: 12,
-      isActive: true,
-      isPromotion: true,
-      promotionPercentage: 20,
-      createdAt: new Date()
-    },
-    {
-      id: 6,
-      name: 'Bague Fiançailles Solitaire',
-      description: 'Magnifique bague de fiançailles avec diamant certifié.',
-      price: 599.99,
-      image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600',
-      images: [
-        'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600',
-        'https://images.unsplash.com/photo-1602173574767-37ac01994b2a?w=600'
-      ],
-      category: 'rings',
-      rating: 5,
-      reviewCount: 67,
-      stock: 5,
-      isActive: true,
-      isPromotion: false,
-      createdAt: new Date()
-    },
-    {
-      id: 7,
-      name: 'Bracelet Charms Personnalisable',
-      description: 'Bracelet avec charms amovibles. Personnalisez-le selon vos envies.',
-      price: 129.99,
-      discountPrice: 103.99,
-      image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600',
-      images: [
-        'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=600',
-        'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=600'
-      ],
-      category: 'bracelets',
-      rating: 4.8,
-      reviewCount: 145,
-      stock: 20,
-      isActive: true,
-      isPromotion: true,
-      promotionPercentage: 20,
-      createdAt: new Date()
-    }
-  ]);
+  // Start with an empty cache to avoid showing embedded mock products when API is unavailable
+  private readonly productsSubject = new BehaviorSubject<Product[]>([]);
 
   readonly products$ = this.productsSubject.asObservable();
 
@@ -281,10 +164,18 @@ export class ProductService {
       return of(this.productsSubject.value);
     }
 
-    return this.http.get<ApiProduct[]>(this.apiUrl).pipe(
-      map((products) => products.map((product) => this.mapApiProduct(product))),
+    return this.http.get<ApiProduct[] | { data: ApiProduct[]; total?: number }>(this.apiUrl).pipe(
+      map((resp) => {
+        const list: ApiProduct[] = Array.isArray(resp) ? resp : resp.data ?? [];
+        return list.map((product) => this.mapApiProduct(product));
+      }),
       tap((products) => this.productsSubject.next(products)),
-      catchError(() => of(this.productsSubject.value))
+      catchError((error) => {
+        console.error('Failed to refresh products from API:', error);
+        // On API error return an empty list to avoid showing stale/mock data
+        this.productsSubject.next([]);
+        return of([] as Product[]);
+      })
     );
   }
 

@@ -112,6 +112,8 @@ export class AdminProductsComponent {
     'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1200&q=80';
   private readonly maxImageCount = 4;
   private readonly maxSourceFileSize = 5 * 1024 * 1024;
+  // Keep a backend-aligned limit (bytes) to avoid frontend/backend mismatch
+  private readonly backendMaxSourceFileSize = 2 * 1024 * 1024;
   private readonly maxImageWidth = 1280;
   private readonly imageQuality = 0.82;
 
@@ -462,7 +464,12 @@ export class AdminProductsComponent {
     this.selectedCategory.set('');
   }
 
-  async onImageUpload(event: { files: File[] }): Promise<void> {
+  async onImageUpload(event: any): Promise<void> {
+    // Normalize files: some upload controls (or browsers) provide a FileList (no slice),
+    // others provide a plain Array. Convert to a true Array first.
+    const rawFiles = event?.files ?? [];
+    const filesArray: File[] = Array.isArray(rawFiles) ? rawFiles : Array.from(rawFiles as FileList);
+
     const currentImagesCount = this.uploadedImages().length;
     const remainingSlots = this.maxImageCount - currentImagesCount;
 
@@ -476,9 +483,9 @@ export class AdminProductsComponent {
       return;
     }
 
-    const selectedFiles = event.files.slice(0, remainingSlots);
+    const selectedFiles = filesArray.slice(0, remainingSlots);
 
-    if (event.files.length > selectedFiles.length) {
+    if (filesArray.length > selectedFiles.length) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Images en exces',
@@ -486,13 +493,16 @@ export class AdminProductsComponent {
       });
     }
 
-    const validFiles = selectedFiles.filter((file) => file.size <= this.maxSourceFileSize);
+    // Align frontend limit with backend policy to avoid rejected uploads.
+    const allowedMax = Math.min(this.maxSourceFileSize, this.backendMaxSourceFileSize);
+
+    const validFiles = selectedFiles.filter((file) => file.size <= allowedMax);
 
     if (validFiles.length < selectedFiles.length) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Fichier trop lourd',
-        detail: 'Chaque image doit faire moins de 5 MB.'
+        detail: `Chaque image doit faire moins de ${Math.round(allowedMax / 1024 / 1024 * 100) / 100} MB.`
       });
     }
 

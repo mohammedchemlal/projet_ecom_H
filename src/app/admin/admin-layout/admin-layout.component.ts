@@ -69,8 +69,11 @@ export class AdminLayoutComponent implements OnInit {
     this.authService.currentUser$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => {
-        this.currentUser.set(user);
-        this.currentUserLabel = user?.fullName?.trim() || user?.email?.trim() || 'Utilisateur';
+        // Schedule updates in a microtask to avoid ExpressionChangedAfterItHasBeenCheckedError
+        Promise.resolve().then(() => {
+          this.currentUser.set(user);
+          this.currentUserLabel = user?.fullName?.trim() || user?.email?.trim() || 'Utilisateur';
+        });
       });
 
     this.bindMenuBadges();
@@ -106,14 +109,17 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   private updateBadge(route: string, count: number): void {
-    this.navItems = this.navItems.map((item) =>
-      item.route === route
-        ? {
-            ...item,
-            badge: count
-          }
-        : item
-    );
+    // Update navItems in next microtask to avoid changing bound values during CD
+    Promise.resolve().then(() => {
+      this.navItems = this.navItems.map((item) =>
+        item.route === route
+          ? {
+              ...item,
+              badge: count
+            }
+          : item
+      );
+    });
   }
 
   getBadgeLabel(count?: number): string {
