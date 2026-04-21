@@ -15,7 +15,7 @@ import { WishlistService } from '../../core/services/wishlist.service';
 import { Product, Testimonial } from '../../shared/models/product.model';
 import { AuthService } from '../../core/services/auth.service';
 import { Observable } from 'rxjs';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 interface HomeCategoryCard {
   name: string;
@@ -241,6 +241,9 @@ heroResponsiveOptions = [
     this.categories = this.buildCategoryCards(this.cachedCategories, this.activeProducts);
   }
 
+  private scrollToCategorySection(categoryValue: string): void {
+  }
+
   private buildCategoryCards(categories: CategoryOption[], products: Product[]): HomeCategoryCard[] {
     const imageByCategory: Record<string, string> = {
       necklaces: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=900&q=80',
@@ -249,12 +252,22 @@ heroResponsiveOptions = [
       earrings: 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?auto=format&fit=crop&w=900&q=80'
     };
 
-    return categories.map((category) => ({
-      name: category.label,
-      image: imageByCategory[category.value] ?? imageByCategory['necklaces'],
-      value: category.value,
-      count: products.filter((product) => product.category === category.value).length
-    }));
+    return categories.map((category) => {
+      // prefer explicit icon URL from category if provided and looks like an image
+      const icon = category.icon as string | undefined;
+      let image = icon && (icon.startsWith('http') || icon.startsWith('/storage') || icon.startsWith('data:')) ? icon : undefined;
+
+      if (!image) {
+        image = imageByCategory[category.value] ?? imageByCategory['necklaces'];
+      }
+
+      return {
+        name: category.label,
+        image: this.normalizeImage(image),
+        value: category.value,
+        count: products.filter((product) => product.category === category.value).length
+      } as HomeCategoryCard;
+    });
   }
 
   addToCart(product: Product): void {

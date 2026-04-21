@@ -41,6 +41,8 @@ interface ApiOrder {
   address: string;
   phone: string;
   created_at: string;
+  customer_name?: string | null;
+  customer_email?: string | null;
 }
 
 interface ApiOrderListResponse {
@@ -184,7 +186,7 @@ export class OrderService {
   }
 
   private mapApiOrder(order: ApiOrder): Order {
-    return {
+    const mapped: Order = {
       id: order.id,
       userId: order.user_id,
       items: order.items.map((item) => ({
@@ -216,6 +218,17 @@ export class OrderService {
       phone: order.phone,
       createdAt: new Date(order.created_at)
     };
+
+    // attach customer name/email if provided by API
+    if ((order as any).customer_name) {
+      (mapped as any).customerName = (order as any).customer_name;
+    }
+
+    if ((order as any).customer_email) {
+      (mapped as any).customerEmail = (order as any).customer_email;
+    }
+
+    return mapped;
   }
 
   private refreshOrdersFromApi(): Observable<Order[]> {

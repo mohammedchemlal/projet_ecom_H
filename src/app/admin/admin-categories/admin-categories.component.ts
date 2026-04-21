@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -12,7 +13,7 @@ import type { CategoryOption } from '../../core/services/category.service';
 
 @Component({
   selector: 'app-admin-categories',
-  imports: [ButtonModule, DialogModule, InputTextModule, ReactiveFormsModule, TableModule, TextareaModule],
+  imports: [CommonModule, ButtonModule, DialogModule, InputTextModule, ReactiveFormsModule, TableModule, TextareaModule],
   templateUrl: './admin-categories.component.html',
   styleUrl: './admin-categories.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -32,9 +33,12 @@ export class AdminCategoriesComponent implements OnInit {
   readonly categoryForm = this.fb.nonNullable.group({
     label: ['', Validators.required],
     value: ['', Validators.required],
-    icon: [''],
     description: ['']
   });
+
+  // file upload state for icon
+  readonly iconFile = signal<File | null>(null);
+  readonly iconPreview = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadCategories();
@@ -54,9 +58,10 @@ export class AdminCategoriesComponent implements OnInit {
     this.categoryForm.reset({
       label: '',
       value: '',
-      icon: '',
       description: ''
     });
+    this.iconFile.set(null);
+    this.iconPreview.set(null);
     this.categoryDialog.set(true);
   }
 
@@ -66,9 +71,11 @@ export class AdminCategoriesComponent implements OnInit {
     this.categoryForm.patchValue({
       label: category.label,
       value: category.value,
-      icon: category.icon,
       description: category.description
     });
+    this.iconFile.set(null);
+    // if icon looks like a URL, show preview
+    this.iconPreview.set(category.icon && (category.icon as string).startsWith('http') ? category.icon : null);
     this.categoryDialog.set(true);
   }
 
@@ -97,9 +104,31 @@ export class AdminCategoriesComponent implements OnInit {
       this.categoryForm.markAllAsTouched();
       return;
     }
-
-    const payload = this.categoryForm.getRawValue();
+    const raw = this.categoryForm.getRawValue();
     const selectedCategory = this.selectedCategory();
+
+    // require an image file when creating a new category
+    const file = this.iconFile();
+    if (!this.isEditing() && !file) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "Veuillez fournir une image pour l'icone." });
+      return;
+    }
+
+    let payload: any;
+    if (file) {
+      const fd = new FormData();
+      fd.append('label', raw.label);
+      fd.append('value', raw.value);
+      fd.append('description', raw.description || '');
+      fd.append('icon', file, file.name);
+      payload = fd;
+    } else {
+      payload = {
+        label: raw.label,
+        value: raw.value,
+        description: raw.description || ''
+      };
+    }
 
     if (this.isEditing() && selectedCategory) {
       this.categoryService.updateCategory(selectedCategory.id, payload).subscribe((updatedCategory) => {
@@ -124,5 +153,23 @@ export class AdminCategoriesComponent implements OnInit {
       });
       this.categoryDialog.set(false);
     });
+  }
+
+  onIconFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) {
+      this.iconFile.set(null);
+      this.iconPreview.set(null);
+      return;
+    }
+
+    const file = input.files[0];
+    this.iconFile.set(file);
+    try {
+      const url = URL.createObjectURL(file);
+      this.iconPreview.set(url);
+    } catch (e) {
+      this.iconPreview.set(null);
+    }
   }
 }

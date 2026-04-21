@@ -576,6 +576,13 @@
   }
 }
 
+  .highlight-category {
+    box-shadow: 0 6px 18px rgba(122,14,24,0.14);
+    transform: translateY(-4px);
+    transition: transform 240ms ease, box-shadow 240ms ease;
+  }
+
+
 /* Testimonials Section */
 .testimonials-section {
   padding: 5rem 0;

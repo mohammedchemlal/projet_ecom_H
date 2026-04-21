@@ -7,6 +7,7 @@ use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
@@ -24,10 +25,15 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'label' => ['required', 'string', 'min:2', 'max:100'],
             'value' => ['required', 'string', 'min:2', 'max:80', 'alpha_dash', 'unique:categories,value'],
-            'icon' => ['nullable', 'string', 'max:100'],
+            // require an uploaded image file for icon on create
+            'icon' => ['required', 'file', 'image', 'max:2048'],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        // store uploaded icon file in products folder
+        $file = $request->file('icon');
+        $path = $file->store('products', 'public');
+        $validated['icon'] = Storage::disk('public')->url($path);
         $category = Category::create([
             'label' => $validated['label'],
             'value' => strtolower($validated['value']),
@@ -53,12 +59,20 @@ class CategoryController extends Controller
                 'alpha_dash',
                 Rule::unique('categories', 'value')->ignore($category->id),
             ],
-            'icon' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'icon' => ['sometimes', 'nullable'],
             'description' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ]);
 
         if (array_key_exists('value', $validated)) {
             $validated['value'] = strtolower($validated['value']);
+        }
+
+        // if file uploaded, store and set URL
+        if ($request->hasFile('icon')) {
+            $file = $request->file('icon');
+            // store icons in the same folder as product images
+            $path = $file->store('products', 'public');
+            $validated['icon'] = Storage::disk('public')->url($path);
         }
 
         if (array_key_exists('icon', $validated) && $validated['icon'] === '') {

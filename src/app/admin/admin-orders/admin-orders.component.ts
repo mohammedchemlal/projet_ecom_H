@@ -115,7 +115,7 @@ export class AdminOrdersComponent implements OnInit {
           this.orders.set(
             orders.map((order) => ({
               ...order,
-              userName: this.getUserName(order.userId)
+              userName: (order as any).customerName ?? this.getUserName(order.userId)
             }))
           );
           this.totalRecords.set(meta.total);
@@ -381,22 +381,57 @@ export class AdminOrdersComponent implements OnInit {
     const html = `
       <html>
         <head>
+          <meta charset="utf-8" />
           <title>Commande #${order.id}</title>
+          <style>
+            body{font-family: Arial, Helvetica, sans-serif;color:#222;margin:0;padding:0;background:#fff}
+            .container{max-width:760px;margin:18px auto;padding:20px}
+            .paper{border:1px solid #e6e6e6;border-radius:6px;padding:18px}
+            .brand{font-size:20px;font-weight:700;color:#7a0e18;text-align:center;margin-bottom:6px}
+            .tagline{font-size:12px;color:#666;text-align:center;margin-bottom:18px}
+            .meta{display:flex;justify-content:space-between;color:#444;font-size:13px;margin-bottom:14px}
+            table{width:100%;border-collapse:collapse;margin-top:8px}
+            th,td{padding:10px;border-bottom:1px solid #f1f1f1}
+            th{background:#fafafa;text-align:left;font-weight:600}
+            .text-right{text-align:right}
+            .totals{margin-top:12px;display:flex;justify-content:flex-end}
+            .totals .amount{background:#f7f7f8;border:1px solid #ececec;padding:10px 14px;border-radius:6px;font-weight:700}
+            @media print{ .no-print{display:none} }
+          </style>
         </head>
-        <body style="font-family: Arial, Helvetica, sans-serif; color:#222; padding:20px;">
-          <h2>Commande #${order.id}</h2>
-          <p><strong>Client:</strong> ${this.escapeHtml(order.userName)}</p>
-          <p><strong>Date:</strong> ${this.escapeHtml(this.formatDate(order.createdAt))}</p>
-          <h3>Produits</h3>
-          <table style="width:100%;border-collapse:collapse"> 
-            <thead>
-              <tr><th style="text-align:left;padding:8px;border-bottom:2px solid #ddd">Produit</th><th style="padding:8px;border-bottom:2px solid #ddd">Qté</th><th style="padding:8px;border-bottom:2px solid #ddd;text-align:right">Prix</th><th style="padding:8px;border-bottom:2px solid #ddd;text-align:right">Total</th></tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-          <h3 style="text-align:right">Total: ${this.formatCurrency(order.total)}</h3>
+        <body>
+          <div class="container">
+            <div class="paper">
+              <div class="brand">Valerya</div>
+              <div class="tagline">House of Jewels</div>
+
+              <div class="meta">
+                <div></div>
+                <div>${this.escapeHtml(this.formatDate(order.createdAt))}</div>
+              </div>
+
+              <div style="margin-bottom:8px"><strong>Client:</strong> ${this.escapeHtml(order.userName)}</div>
+              <div style="margin-bottom:6px"><strong>Téléphone:</strong> ${this.escapeHtml(order.phone || '—')}</div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Produit</th>
+                    <th style="width:80px;text-align:center">Qté</th>
+                    <th style="width:120px;text-align:right">Prix</th>
+                    <th style="width:120px;text-align:right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                </tbody>
+              </table>
+
+              <div class="totals">
+                <div class="amount">Total: ${this.formatCurrency(order.total)}</div>
+              </div>
+            </div>
+          </div>
         </body>
       </html>
     `;

@@ -121,7 +121,37 @@ export class CategoryService {
   }
 
   createCategory(category: Omit<CategoryOption, 'id'>): Observable<CategoryOption> {
-    return this.http.post<ApiCategory>(this.apiUrl, category, { headers: this.authHeaders }).pipe(
+    const body: any = category as any;
+    const options = { headers: this.authHeaders };
+
+    if (body instanceof FormData) {
+      // let Angular set the Content-Type for FormData
+      return this.http.post<ApiCategory>(this.apiUrl, body, options).pipe(
+        map((created) => ({
+          id: created.id,
+          label: created.label,
+          value: created.value,
+          icon: created.icon,
+          description: created.description
+        })),
+        tap((created) => this.categoriesSubject.next([...this.categoriesSubject.value, created])),
+        catchError((error) => {
+          if (error instanceof HttpErrorResponse && error.status !== 404) {
+            return throwError(() => new Error(this.getApiErrorMessage(error)));
+          }
+
+          const newCategory: CategoryOption = {
+            ...category,
+            id: Date.now()
+          };
+
+          this.categoriesSubject.next([...this.categoriesSubject.value, newCategory]);
+          return of(newCategory);
+        })
+      );
+    }
+
+    return this.http.post<ApiCategory>(this.apiUrl, category, options).pipe(
       map((created) => ({
         id: created.id,
         label: created.label,
@@ -147,7 +177,55 @@ export class CategoryService {
   }
 
   updateCategory(id: number, category: Partial<Omit<CategoryOption, 'id'>>): Observable<CategoryOption> {
-    return this.http.patch<ApiCategory>(`${this.apiUrl}/${id}`, category, { headers: this.authHeaders }).pipe(
+    const body: any = category as any;
+    const options = { headers: this.authHeaders };
+
+    if (body instanceof FormData) {
+      return this.http.patch<ApiCategory>(`${this.apiUrl}/${id}`, body, options).pipe(
+        map((updated) => ({
+          id: updated.id,
+          label: updated.label,
+          value: updated.value,
+          icon: updated.icon,
+          description: updated.description
+        })),
+        tap((updatedCategory) =>
+          this.categoriesSubject.next(
+            this.categoriesSubject.value.map((item) => (item.id === id ? updatedCategory : item))
+          )
+        ),
+        catchError((error) => {
+          if (error instanceof HttpErrorResponse && error.status !== 404) {
+            return throwError(() => new Error(this.getApiErrorMessage(error)));
+          }
+
+          let updatedCategory: CategoryOption | undefined;
+
+          this.categoriesSubject.next(
+            this.categoriesSubject.value.map((item) => {
+              if (item.id !== id) {
+                return item;
+              }
+
+              updatedCategory = {
+                ...item,
+                ...category
+              };
+
+              return updatedCategory;
+            })
+          );
+
+          if (!updatedCategory) {
+            return throwError(() => new Error('Categorie introuvable.'));
+          }
+
+          return of(updatedCategory);
+        })
+      );
+    }
+
+    return this.http.patch<ApiCategory>(`${this.apiUrl}/${id}`, category, options).pipe(
       map((updated) => ({
         id: updated.id,
         label: updated.label,

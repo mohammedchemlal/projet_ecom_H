@@ -26,10 +26,15 @@
         <td>{{ category.label }}</td>
         <td>{{ category.value }}</td>
         <td>
-          <span class="icon-pill">
-            <i [class]="category.icon"></i>
-            {{ category.icon }}
-          </span>
+          <ng-container *ngIf="category.icon && (category.icon.startsWith('http') || category.icon.startsWith('/storage') || category.icon.startsWith('data:')); else iconText">
+            <img [src]="category.icon" alt="icone" class="category-icon" />
+          </ng-container>
+          <ng-template #iconText>
+            <span class="icon-pill">
+              <i [class]="category.icon"></i>
+              {{ category.icon }}
+            </span>
+          </ng-template>
         </td>
         <td>{{ category.description || '-' }}</td>
         <td>
@@ -65,8 +70,14 @@
         </div>
 
         <div class="field">
-          <label for="category-icon">Icone Prime *</label>
-          <input id="category-icon" pInputText type="text" formControlName="icon" placeholder="Ex: pi pi-gem" />
+          <label for="category-icon">Icone (image) *</label>
+          <div class="icon-upload">
+            <label class="file-label">Ajouter une icone (image)</label>
+            <input type="file" accept="image/*" (change)="onIconFileChange($event)" />
+            <div *ngIf="iconPreview()" class="icon-preview">
+              <img [src]="iconPreview()" alt="Aperçu icone" />
+            </div>
+          </div>
         </div>
 
         <div class="field full-width">

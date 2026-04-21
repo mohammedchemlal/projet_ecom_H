@@ -44,6 +44,14 @@
   font-size: 0.82rem;
 }
 
+.category-icon {
+  max-width: 48px;
+  max-height: 32px;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
 .actions-cell {
   display: flex;
   align-items: center;

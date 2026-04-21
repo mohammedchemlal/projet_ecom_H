@@ -21,7 +21,7 @@ class OrderController extends Controller
 
         abort_unless($user !== null, 401, 'Authentification requise.');
 
-        $query = Order::query()->orderByDesc('created_at');
+        $query = Order::with('user')->orderByDesc('created_at');
 
         $search = trim((string) $request->query('search', ''));
         $status = $request->query('status');
@@ -354,6 +354,9 @@ class OrderController extends Controller
             'address' => $order->address,
             'phone' => $order->phone,
             'created_at' => $order->created_at,
+            // include basic customer info when available
+            'customer_name' => $order->user?->full_name ?? null,
+            'customer_email' => $order->user?->email ?? null,
         ];
     }
 

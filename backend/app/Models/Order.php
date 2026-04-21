@@ -34,4 +34,9 @@ class Order extends Model
             'discount_amount' => 'float',
         ];
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
