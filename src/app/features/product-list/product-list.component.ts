@@ -60,9 +60,9 @@ export class ProductListComponent implements OnInit, OnDestroy {
   categories: ProductFilterCategory[] = [];
 
   visibleCategories(): ProductFilterCategory[] {
-    return this.categories.filter(
-      (category) => category.count > 0 || this.selectedCategories.includes(category.value)
-    );
+    // Return all categories from the DB so the filter shows every available category.
+    // The UI will indicate zero counts but the user can still select any category.
+    return this.categories;
   }
   
   // Sort options
