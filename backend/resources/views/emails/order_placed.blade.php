@@ -73,7 +73,16 @@
                   </div>
                 </td>
                 <td style="text-align:center">{{ data_get($item, 'quantity', 1) }}</td>
-                <td style="text-align:right">{{ number_format(data_get($item, 'product.discount_price', data_get($item, 'product.price', 0)), 2) }} MAD</td>
+                @php
+                  $unitPrice = data_get($item, 'product.discount_price');
+                  if ($unitPrice === null || $unitPrice === '') {
+                    $unitPrice = data_get($item, 'product.price', 0);
+                  }
+                  $unitPrice = (float) $unitPrice;
+                  $quantity = (int) data_get($item, 'quantity', 1);
+                  $lineTotal = $unitPrice * $quantity;
+                @endphp
+                <td style="text-align:right">{{ number_format($unitPrice, 2) }} MAD<br/><small style="color:#666">Ligne: {{ number_format($lineTotal, 2) }} MAD</small></td>
               </tr>
             @endforeach
           </tbody>
