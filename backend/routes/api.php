@@ -16,6 +16,8 @@ Route::get('/products/{product}/reviews', [ProductController::class, 'reviews'])
 Route::get('/promo-codes', [PromoCodeController::class, 'index']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/testimonials', [TestimonialController::class, 'index']);
+// Public endpoint for unauthenticated frontends
+Route::get('/testimonials/public', [TestimonialController::class, 'publicIndex']);
 
 Route::prefix('auth')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register']);

@@ -35,7 +35,9 @@ export class TestimonialService {
   private readonly adminApiUrl = `${environment.apiUrl}/admin/testimonials`;
 
   getTestimonials(): Observable<Testimonial[]> {
-    return this.http.get<ApiTestimonial[]>(this.apiUrl).pipe(
+    // Use public endpoint so testimonials load without authentication
+    const publicUrl = `${this.apiUrl}/public`;
+    return this.http.get<ApiTestimonial[]>(publicUrl).pipe(
       map((testimonials) => testimonials.map((item) => this.mapApiTestimonial(item))),
       catchError(() => of([]))
     );

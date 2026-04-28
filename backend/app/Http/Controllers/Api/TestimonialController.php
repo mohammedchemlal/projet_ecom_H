@@ -14,11 +14,24 @@ class TestimonialController extends Controller
     {
         $query = Testimonial::query();
 
+        // By default, show only active testimonials to non-admin users.
         if ($request->user()?->role !== 'admin') {
             $query->where('is_active', true);
         }
 
-        $testimonials = $query
+        $testimonials = $query->orderBy('sort_order')->orderByDesc('created_at')->get();
+
+        return response()->json($testimonials);
+    }
+
+    /**
+     * Public endpoint that always returns active testimonials.
+     * This is intended for frontend clients that cannot authenticate.
+     */
+    public function publicIndex(): JsonResponse
+    {
+        $testimonials = Testimonial::query()
+            ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderByDesc('created_at')
             ->get();
