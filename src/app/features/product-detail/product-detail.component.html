@@ -185,10 +185,14 @@
                   </div>
                 </div>
               </div>
-              <button class="write-review-btn" type="button" (click)="showReviewDialog = true">
+              <button *ngIf="authService.isLoggedIn()" class="write-review-btn" type="button" (click)="openReviewDialog()">
                 <i class="pi pi-pencil" aria-hidden="true"></i>
                 Donner mon avis
               </button>
+              <a *ngIf="!authService.isLoggedIn()" class="write-review-btn login-to-review" [routerLink]="['/auth/login']" [queryParams]="{ returnUrl: router.url }">
+                <i class="pi pi-lock" aria-hidden="true"></i>
+                Connectez-vous pour donner un avis
+              </a>
             </div>
 
             <div class="reviews-list">
@@ -208,6 +212,14 @@
                   </div>
                   <div class="review-rating" aria-hidden="true">
                     <i class="pi pi-star-fill" *ngFor="let s of getStarsArray(review.rating); trackBy: trackById"></i>
+                  </div>
+                  <div class="review-actions" *ngIf="currentUserId !== null && review.userId === currentUserId">
+                    <button class="review-action-btn" type="button" (click)="editReview(review)" title="Modifier">
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button class="review-action-btn review-action-delete" type="button" (click)="deleteReview(review)" title="Supprimer">
+                      <i class="pi pi-trash"></i>
+                    </button>
                   </div>
                 </header>
                 <h4 *ngIf="review.title" class="review-title">{{ review.title }}</h4>
@@ -285,7 +297,7 @@
 <!-- Write Review Dialog -->
 <p-dialog
   [(visible)]="showReviewDialog"
-  header="Donner mon avis"
+  [header]="isEditingReview ? 'Modifier mon avis' : 'Donner mon avis'"
   [modal]="true"
   [style]="{ width: '550px' }"
   [closable]="true"
@@ -331,7 +343,7 @@
       <ng-template #submittingTpl>
         <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
       </ng-template>
-      Publier mon avis
+      {{ isEditingReview ? 'Modifier mon avis' : 'Publier mon avis' }}
     </button>
   </ng-template>
 </p-dialog>

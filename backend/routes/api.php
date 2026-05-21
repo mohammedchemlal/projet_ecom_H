@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PromoCodeController;
 use App\Http\Controllers\Api\TestimonialController;
+use App\Http\Controllers\Api\NewsletterController;
+use App\Http\Controllers\Api\SavedCartController;
+use App\Http\Controllers\Api\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/products', [ProductController::class, 'index']);
@@ -18,6 +21,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/testimonials', [TestimonialController::class, 'index']);
 // Public endpoint for unauthenticated frontends
 Route::get('/testimonials/public', [TestimonialController::class, 'publicIndex']);
+Route::post('/newsletter', [NewsletterController::class, 'store']);
 
 Route::prefix('auth')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register']);
@@ -54,10 +58,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::patch('/products/{product}', [ProductController::class, 'update']);
     Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     Route::post('/products/{product}/reviews', [ProductController::class, 'storeReview']);
+    Route::patch('/products/{product}/reviews/{review}', [ProductController::class, 'updateReview']);
+    Route::delete('/products/{product}/reviews/{review}', [ProductController::class, 'destroyReview']);
 
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::patch('/orders/{order}', [OrderController::class, 'update']);
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
     Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
 
     Route::post('/promo-codes', [PromoCodeController::class, 'store']);
@@ -67,4 +74,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/categories', [CategoryController::class, 'store']);
     Route::patch('/categories/{category}', [CategoryController::class, 'update']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::post('/wishlist', [WishlistController::class, 'store']);
+    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle']);
+    Route::delete('/wishlist/{product}', [WishlistController::class, 'destroy']);
+
+    Route::get('/saved-carts', [SavedCartController::class, 'index']);
+    Route::post('/saved-carts', [SavedCartController::class, 'store']);
+    Route::get('/saved-carts/{savedCart}', [SavedCartController::class, 'show']);
+    Route::delete('/saved-carts/{savedCart}', [SavedCartController::class, 'destroy']);
 });

@@ -9,9 +9,12 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TagModule } from 'primeng/tag';
 import { AuthService } from '../../core/services/auth.service';
+import { CartService } from '../../core/services/cart.service';
 import { OrderService } from '../../core/services/order.service';
+import { SavedCartService } from '../../core/services/saved-cart.service';
 import { User } from '../../shared/models/user.model';
 import { Order } from '../../shared/models/order.model';
+import type { SavedCart } from '../../shared/models/saved-cart.model';
 
 @Component({
   selector: 'app-user-profile',
@@ -30,11 +33,13 @@ import { Order } from '../../shared/models/order.model';
   styleUrls: ['./user-profile.component.scss']
 })
 export class UserProfileComponent implements OnInit, OnDestroy {
-  activeTab: 'profile' | 'orders' | 'security' = 'profile';
+  activeTab: 'profile' | 'orders' | 'security' | 'saved-carts' = 'profile';
   currentUser: User | null = null;
   profileForm!: FormGroup;
   passwordForm!: FormGroup;
   orders: Order[] = [];
+  savedCarts: SavedCart[] = [];
+  isLoadingSavedCarts = false;
   isLoading = true;
   isSaving = false;
   
@@ -52,7 +57,8 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     { label: 'Toutes', value: 'all' },
     { label: 'En attente', value: 'pending' },
     { label: 'Confirmée', value: 'confirmed' },
-    { label: 'Livrée', value: 'delivered' }
+    { label: 'Livrée', value: 'delivered' },
+    { label: 'Annulée', value: 'cancelled' }
   ];
   
   // Edit mode
@@ -89,7 +95,9 @@ export class UserProfileComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     public authService: AuthService,
+    private cartService: CartService,
     private orderService: OrderService,
+    private savedCartService: SavedCartService,
     private messageService: MessageService,
     public router: Router
   ) {
@@ -100,7 +108,7 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const tab = params.get('tab');
 
-      if (tab === 'orders' || tab === 'security' || tab === 'profile') {
+      if (tab === 'orders' || tab === 'security' || tab === 'profile' || tab === 'saved-carts') {
         this.activeTab = tab;
       }
     });
@@ -377,6 +385,35 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     });
   }
 
+  cancelOrder(order: Order): void {
+    if (!confirm('Voulez-vous vraiment annuler cette commande ? Le stock sera remis a jour.')) {
+      return;
+    }
+
+    this.orderService.cancelOrder(order.id).subscribe({
+      next: (updatedOrder) => {
+        if (updatedOrder) {
+          this.orders = this.orders.map((o) => (o.id === order.id ? updatedOrder : o));
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Commande annulée',
+            detail: `La commande #${order.id} a été annulée.`,
+            life: 4000
+          });
+        }
+      },
+      error: (error) => {
+        const msg = error.error?.message || error.message || 'Erreur lors de l\'annulation.';
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: msg,
+          life: 5000
+        });
+      }
+    });
+  }
+
   getFilteredOrders(): Order[] {
     if (this.orderStatusFilter === 'all') {
       return this.orders;
@@ -388,7 +425,8 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     const statusMap: { [key: string]: string } = {
       pending: 'En attente',
       confirmed: 'Confirmée',
-      delivered: 'Livrée'
+      delivered: 'Livrée',
+      cancelled: 'Annulée'
     };
     return statusMap[status] || status;
   }
@@ -397,9 +435,86 @@ export class UserProfileComponent implements OnInit, OnDestroy {
     const severityMap: Record<string, 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast'> = {
       pending: 'warn',
       confirmed: 'info',
-      delivered: 'success'
+      delivered: 'success',
+      cancelled: 'danger'
     };
     return severityMap[status] || 'secondary';
+  }
+
+  loadSavedCarts(): void {
+    this.isLoadingSavedCarts = true;
+    this.savedCartService.getAll().subscribe({
+      next: (carts) => {
+        this.savedCarts = carts;
+        this.isLoadingSavedCarts = false;
+      },
+      error: () => {
+        this.savedCarts = [];
+        this.isLoadingSavedCarts = false;
+      }
+    });
+  }
+
+  restoreSavedCart(cart: SavedCart): void {
+    this.cartService.clearCart();
+    cart.items.forEach((item) => {
+      this.cartService.addToCart(item.product, item.quantity);
+    });
+    if (cart.promo) {
+      this.cartService.applyPromoFromSaved(cart.promo);
+    }
+    this.savedCartService.remove(cart.id).subscribe({
+      next: () => {
+        this.savedCarts = this.savedCarts.filter((c) => c.id !== cart.id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Panier restauré',
+          detail: 'Votre panier a été restauré. Rendez-vous dans le panier pour finaliser.',
+          life: 4000
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Panier restauré',
+          detail: 'Votre panier a été restauré.',
+          life: 4000
+        });
+      }
+    });
+  }
+
+  deleteSavedCart(cart: SavedCart): void {
+    this.savedCartService.remove(cart.id).subscribe({
+      next: () => {
+        this.savedCarts = this.savedCarts.filter((c) => c.id !== cart.id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Panier supprimé',
+          detail: 'Le panier sauvegardé a été supprimé.',
+          life: 3000
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: 'Impossible de supprimer le panier.',
+          life: 3000
+        });
+      }
+    });
+  }
+
+  getSavedCartTotal(cart: SavedCart): number {
+    return (cart.items ?? []).reduce((sum, item) => {
+      const price = item.product.discountPrice || item.product.price;
+      return sum + price * item.quantity;
+    }, 0);
+  }
+
+  getSavedCartCount(cart: SavedCart): number {
+    return (cart.items ?? []).length;
   }
 
   formatDate(date: Date): string {

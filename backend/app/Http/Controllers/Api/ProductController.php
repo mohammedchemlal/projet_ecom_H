@@ -169,6 +169,51 @@ class ProductController extends Controller
         return response()->json($this->transformReview($review->fresh()), 201);
     }
 
+    public function updateReview(Request $request, Product $product, ProductReview $review): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user !== null, 401, 'Authentification requise.');
+
+        if ($review->user_id !== $user->id && $user->role !== 'admin') {
+            return response()->json(['message' => 'Vous ne pouvez modifier que vos propres avis.'], 403);
+        }
+
+        $validated = $request->validate(
+            [
+                'rating' => ['sometimes', 'integer', 'min:1', 'max:5'],
+                'title' => ['sometimes', 'string', 'min:2', 'max:255'],
+                'comment' => ['sometimes', 'string', 'min:3', 'max:4000'],
+            ],
+            [
+                'rating.integer' => 'La note doit etre un nombre entier.',
+                'rating.min' => 'La note minimale est 1.',
+                'rating.max' => 'La note maximale est 5.',
+                'title.min' => 'Le titre doit contenir au moins 2 caracteres.',
+                'title.max' => 'Le titre ne peut pas depasser 255 caracteres.',
+                'comment.min' => 'Le commentaire doit contenir au moins 3 caracteres.',
+                'comment.max' => 'Le commentaire ne peut pas depasser 4000 caracteres.',
+            ]
+        );
+
+        $review->update($validated);
+
+        return response()->json($this->transformReview($review->fresh()));
+    }
+
+    public function destroyReview(Request $request, Product $product, ProductReview $review): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user !== null, 401, 'Authentification requise.');
+
+        if ($review->user_id !== $user->id && $user->role !== 'admin') {
+            return response()->json(['message' => 'Vous ne pouvez supprimer que vos propres avis.'], 403);
+        }
+
+        $review->delete();
+
+        return response()->json(['message' => 'Avis supprime.']);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->authorizeAdmin($request);

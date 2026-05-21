@@ -9,7 +9,7 @@ export interface Order {
   total: number;
   discountAmount?: number;
   promoCode?: string;
-  status: 'pending' | 'confirmed' | 'delivered';
+  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
   address: string;
   phone: string;
   createdAt: Date;

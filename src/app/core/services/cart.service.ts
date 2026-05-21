@@ -162,6 +162,10 @@ export class CartService {
     return Math.max(this.getCartSubtotal() - this.getCartDiscountAmount(), 0);
   }
 
+  applyPromoFromSaved(promo: CartPromo): void {
+    this.savePromo(promo);
+  }
+
   clearCart(): void {
     this.saveCart([]);
     this.clearPromoCode();

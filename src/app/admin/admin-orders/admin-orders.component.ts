@@ -66,7 +66,8 @@ export class AdminOrdersComponent implements OnInit {
   readonly statuses: OrderStatusOption[] = [
     { label: 'En attente', value: 'pending' },
     { label: 'Confirmee', value: 'confirmed' },
-    { label: 'Livree', value: 'delivered' }
+    { label: 'Livree', value: 'delivered' },
+    { label: 'Annulee', value: 'cancelled' }
   ];
 
   readonly statusFilterOptions: Array<{ label: string; value: Order['status'] | 'all' }> = [
@@ -323,11 +324,12 @@ export class AdminOrdersComponent implements OnInit {
     return found?.label ?? status;
   }
 
-  getStatusSeverity(status: Order['status']): 'success' | 'info' | 'warn' | 'secondary' {
-    const map: Record<Order['status'], 'success' | 'info' | 'warn'> = {
+  getStatusSeverity(status: Order['status']): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    const map: Record<Order['status'], 'success' | 'info' | 'warn' | 'danger'> = {
       pending: 'warn',
       confirmed: 'info',
-      delivered: 'success'
+      delivered: 'success',
+      cancelled: 'danger'
     };
 
     return map[status] ?? 'secondary';

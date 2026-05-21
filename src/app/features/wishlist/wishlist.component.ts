@@ -2,6 +2,7 @@ import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, OnDestroy, PLATFORM_ID, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
 import { RatingModule } from 'primeng/rating';
@@ -18,16 +19,15 @@ import { Product } from '../../shared/models/product.model';
 export class WishlistComponent implements OnInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private readonly destroy$ = new Subject<void>();
 
   wishlistItems: Product[] = [];
   isLoading = true;
   recommendedProducts: Product[] = [];
-  
-  // Share wishlist
+
   shareModalVisible = false;
   shareLink = '';
-  
-  // Move all to cart
+
   isMovingAllToCart = false;
 
   constructor(
@@ -38,25 +38,24 @@ export class WishlistComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.loadWishlist();
+    this.wishlistService.wishlist$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(items => {
+        this.wishlistItems = items;
+        this.isLoading = false;
+      });
+
+    this.wishlistService.refreshFromApi().subscribe();
     this.loadRecommendedProducts();
     this.generateShareLink();
   }
 
   ngOnDestroy() {
-    // Cleanup
-  }
-
-  loadWishlist() {
-    this.isLoading = true;
-    this.wishlistService.wishlist$.subscribe(items => {
-      this.wishlistItems = items;
-      this.isLoading = false;
-    });
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadRecommendedProducts() {
-    // Mock recommended products based on wishlist items
     this.recommendedProducts = [
       {
         id: 101,
@@ -141,7 +140,7 @@ export class WishlistComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    
+
     this.cartService.addToCart(product, 1);
     this.messageService.add({
       severity: 'success',
@@ -162,22 +161,21 @@ export class WishlistComponent implements OnInit, OnDestroy {
     }
 
     this.isMovingAllToCart = true;
-    
-    // Simulate API call
+
     setTimeout(() => {
       this.wishlistItems.forEach(product => {
         if (product.stock > 0) {
           this.cartService.addToCart(product, 1);
         }
       });
-      
+
       this.messageService.add({
         severity: 'success',
         summary: 'Ajout terminé',
         detail: `${this.wishlistItems.length} produits ont été ajoutés à votre panier`,
         life: 4000
       });
-      
+
       this.isMovingAllToCart = false;
     }, 1000);
   }
@@ -259,7 +257,7 @@ export class WishlistComponent implements OnInit, OnDestroy {
     let url = '';
     const shareText = 'Découvrez ma wishlist LuxeAccessories !';
     const shareUrl = this.shareLink;
-    
+
     switch(platform) {
       case 'facebook':
         url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
@@ -274,7 +272,7 @@ export class WishlistComponent implements OnInit, OnDestroy {
         url = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
         break;
     }
-    
+
     window.open(url, '_blank', 'width=600,height=400');
     this.shareModalVisible = false;
   }

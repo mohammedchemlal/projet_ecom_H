@@ -469,6 +469,16 @@ export class OrderService {
     );
   }
 
+  cancelOrder(orderId: number): Observable<Order | undefined> {
+    return this.http.post<ApiOrder>(`${this.apiUrl}/${orderId}/cancel`, {}, { headers: this.authHeaders }).pipe(
+      map((updatedOrder) => this.mapApiOrder(updatedOrder)),
+      tap((mappedOrder) => {
+        this.persist(this.ordersSubject.value.map((order) => (order.id === orderId ? mappedOrder : order)));
+      }),
+      catchError((error) => throwError(() => error))
+    );
+  }
+
   deleteOrder(orderId: number): Observable<{ success: true }> {
     return this.http.delete<{ success: true }>(`${this.apiUrl}/${orderId}`, { headers: this.authHeaders }).pipe(
       tap(() => this.persist(this.ordersSubject.value.filter((order) => order.id !== orderId)))

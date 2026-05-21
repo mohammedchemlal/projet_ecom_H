@@ -159,6 +159,10 @@
               <i class="pi pi-lock"></i>
               Passer la commande
             </button>
+            <button *ngIf="isLoggedIn" class="btn-save-cart" (click)="saveCartForLater()" [disabled]="isSavingCart">
+              <i class="pi pi-bookmark"></i>
+              {{ isSavingCart ? 'Sauvegarde...' : 'Sauvegarder mon panier' }}
+            </button>
           </div>
           <!-- Promo Code -->
           <div class="promo-card">

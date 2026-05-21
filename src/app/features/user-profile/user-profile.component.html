@@ -39,6 +39,11 @@
             <span>Mes commandes</span>
             <span class="badge" *ngIf="orders.length > 0">{{ orders.length }}</span>
           </button>
+          <button class="nav-item" [class.active]="activeTab === 'saved-carts'" (click)="activeTab = 'saved-carts'; loadSavedCarts()">
+            <i class="pi pi-bookmark"></i>
+            <span>Paniers sauvegardés</span>
+            <span class="badge" *ngIf="savedCarts.length > 0">{{ savedCarts.length }}</span>
+          </button>
           <button class="nav-item" [class.active]="activeTab === 'security'" (click)="activeTab = 'security'">
             <i class="pi pi-shield"></i>
             <span>Sécurité</span>
@@ -242,10 +247,16 @@
                     <strong>-{{ getOrderDiscount(order) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</strong>
                   </div>
                 }
-                <button class="view-order-btn" (click)="viewOrderDetails(order)">
-                  Voir les détails
-                  <i class="pi pi-arrow-right"></i>
-                </button>
+                <div class="order-actions">
+                  <button class="view-order-btn" (click)="viewOrderDetails(order)">
+                    Voir les détails
+                    <i class="pi pi-arrow-right"></i>
+                  </button>
+                  <button *ngIf="order.status === 'pending'" class="cancel-order-btn" (click)="cancelOrder(order)">
+                    <i class="pi pi-times"></i>
+                    Annuler
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -255,6 +266,54 @@
               <p>Vous n'avez pas encore passé de commande</p>
               <button class="btn-primary" routerLink="/products">
                 Découvrir nos produits
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Saved Carts Tab -->
+        <div class="tab-content" *ngIf="activeTab === 'saved-carts'">
+          <div class="saved-carts-header">
+            <h2>Paniers sauvegardés</h2>
+            <p *ngIf="savedCarts.length > 0">{{ savedCarts.length }} panier(s) sauvegardé(s)</p>
+          </div>
+
+          <div class="saved-carts-list" *ngIf="!isLoadingSavedCarts; else savedCartsSkeleton">
+            <div *ngFor="let cart of savedCarts" class="saved-cart-card">
+              <div class="saved-cart-top">
+                <div class="saved-cart-info">
+                  <h3>{{ cart.name }}</h3>
+                  <span class="saved-cart-date">Sauvegardé le {{ formatDate(cart.createdAt) }}</span>
+                </div>
+                <div class="saved-cart-stats">
+                  <span class="saved-cart-count">{{ getSavedCartCount(cart) }} article(s)</span>
+                  <span class="saved-cart-total">{{ getSavedCartTotal(cart) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                </div>
+              </div>
+              <div class="saved-cart-items" *ngIf="cart.items.length > 0">
+                <div *ngFor="let item of cart.items.slice(0, 4)" class="saved-cart-item-thumb">
+                  <img [src]="item.product.images[0] || item.product.image" [alt]="item.product.name" />
+                </div>
+                <div *ngIf="cart.items.length > 4" class="saved-cart-more">+{{ cart.items.length - 4 }}</div>
+              </div>
+              <div class="saved-cart-actions">
+                <button class="btn-primary btn-sm" (click)="restoreSavedCart(cart)">
+                  <i class="pi pi-refresh"></i>
+                  Restaurer dans le panier
+                </button>
+                <button class="btn-outline btn-sm" (click)="deleteSavedCart(cart)">
+                  <i class="pi pi-trash"></i>
+                  Supprimer
+                </button>
+              </div>
+            </div>
+
+            <div class="empty-orders" *ngIf="savedCarts.length === 0">
+              <i class="pi pi-bookmark"></i>
+              <h3>Aucun panier sauvegardé</h3>
+              <p>Sauvegardez votre panier depuis la page panier pour le retrouver plus tard.</p>
+              <button class="btn-primary" routerLink="/cart">
+                Voir mon panier
               </button>
             </div>
           </div>
@@ -382,6 +441,13 @@
       <div><span>Adresse</span><strong>{{ order.address.replace('|', ', ') }}</strong></div>
       <div><span>Téléphone</span><strong>{{ order.phone }}</strong></div>
     </div>
+
+    <div class="order-details-actions" *ngIf="order.status === 'pending'">
+      <button class="cancel-order-btn" (click)="cancelOrder(order); closeOrderDetailsModal()">
+        <i class="pi pi-times"></i>
+        Annuler cette commande
+      </button>
+    </div>
   </div>
 
   <ng-template pTemplate="footer">
@@ -410,6 +476,16 @@
 <ng-template #ordersSkeleton>
   <div class="skeleton-orders">
     <div *ngFor="let _ of [1,2,3]" class="skeleton-order">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-item"></div>
+      <div class="skeleton-footer"></div>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #savedCartsSkeleton>
+  <div class="skeleton-orders">
+    <div *ngFor="let _ of [1,2]" class="skeleton-order">
       <div class="skeleton-header"></div>
       <div class="skeleton-item"></div>
       <div class="skeleton-footer"></div>

@@ -5,9 +5,11 @@ import { Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { RatingModule } from 'primeng/rating';
 import { Subscription } from 'rxjs';
+import { AuthService } from '../../core/services/auth.service';
 import { CartService, type CartPromo } from '../../core/services/cart.service';
 import { PromoCodeService } from '../../core/services/promo-code.service';
 import { ProductService } from '../../core/services/product.service';
+import { SavedCartService } from '../../core/services/saved-cart.service';
 import { WishlistService } from '../../core/services/wishlist.service';
 import { CartItem } from '../../shared/models/cart-item.model';
 import { Product } from '../../shared/models/product.model';
@@ -42,6 +44,8 @@ export class CartComponent implements OnInit, OnDestroy {
   private cartSubscription?: Subscription;
   private promoSubscription?: Subscription;
 
+  isSavingCart = false;
+
   // Available promo codes
   readonly availablePromoCodes: Array<{ code: string; discount: number; type: CartPromo['type'] }> = [
     { code: 'WELCOME10', discount: 10, type: 'percentage' },
@@ -50,8 +54,10 @@ export class CartComponent implements OnInit, OnDestroy {
   ];
 
   constructor(
+    private authService: AuthService,
     private cartService: CartService,
     private productService: ProductService,
+    private savedCartService: SavedCartService,
     private wishlistService: WishlistService,
     private messageService: MessageService,
     private router: Router,
@@ -67,6 +73,45 @@ export class CartComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.cartSubscription?.unsubscribe();
     this.promoSubscription?.unsubscribe();
+  }
+
+  get isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
+
+  saveCartForLater(): void {
+    const items = this.cartItems;
+    if (items.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Panier vide',
+        detail: 'Ajoutez des produits avant de sauvegarder.',
+        life: 3000
+      });
+      return;
+    }
+
+    this.isSavingCart = true;
+    this.savedCartService.save('Mon panier', items, this.appliedPromo).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Panier sauvegardé',
+          detail: 'Votre panier a été sauvegardé. Retrouvez-le dans votre profil.',
+          life: 4000
+        });
+        this.isSavingCart = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: err.error?.message || 'Impossible de sauvegarder le panier.',
+          life: 4000
+        });
+        this.isSavingCart = false;
+      }
+    });
   }
 
   loadCart() {

@@ -46,6 +46,12 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   };
   showReviewDialog = false;
   isSubmittingReview = false;
+  isEditingReview = false;
+  editingReviewId: number | null = null;
+
+  get currentUserId(): number | null {
+    return this.authService.getCurrentUser()?.id ?? null;
+  }
   
   // Zoom modal
   showZoomModal = false;
@@ -53,12 +59,12 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
+    public router: Router,
     private location: Location,
     private productService: ProductService,
     private cartService: CartService,
     private wishlistService: WishlistService,
-    private authService: AuthService,
+    public authService: AuthService,
     private messageService: MessageService,
     private seo: SeoService
   ) {}
@@ -221,6 +227,67 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     this.addToWishlist();
   }
 
+  openReviewDialog(): void {
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+
+    this.isEditingReview = false;
+    this.editingReviewId = null;
+    this.newReview = { rating: 5, title: '', comment: '' };
+    this.showReviewDialog = true;
+  }
+
+  editReview(review: ProductReview): void {
+    this.isEditingReview = true;
+    this.editingReviewId = review.id;
+    this.newReview = {
+      rating: review.rating,
+      title: review.title,
+      comment: review.comment
+    };
+    this.showReviewDialog = true;
+  }
+
+  deleteReview(review: ProductReview): void {
+    if (!confirm('Voulez-vous vraiment supprimer votre avis ?')) {
+      return;
+    }
+
+    if (!this.product) {
+      return;
+    }
+
+    this.productService.deleteProductReview(this.product.id, review.id).subscribe({
+      next: () => {
+        this.reviews = this.reviews.filter((r) => r.id !== review.id);
+        this.calculateReviewStats();
+
+        if (this.product) {
+          this.product = {
+            ...this.product,
+            rating: this.reviewStats.average,
+            reviewCount: this.reviewStats.total
+          };
+        }
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Avis supprimé',
+          detail: 'Votre avis a été supprimé.'
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: err.message || 'Impossible de supprimer votre avis.'
+        });
+      }
+    });
+  }
+
   submitReview() {
     if (!this.newReview.title.trim() || !this.newReview.comment.trim()) {
       this.messageService.add({
@@ -256,44 +323,79 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.productService
-      .submitProductReview(this.product.id, {
-        rating: this.newReview.rating,
-        title: this.newReview.title,
-        comment: this.newReview.comment
-      })
-      .subscribe({
-        next: (review) => {
-          this.reviews.unshift(review);
-          this.calculateReviewStats();
+    if (this.isEditingReview && this.editingReviewId !== null) {
+      this.productService
+        .updateProductReview(this.product.id, this.editingReviewId, {
+          rating: this.newReview.rating,
+          title: this.newReview.title,
+          comment: this.newReview.comment
+        })
+        .subscribe({
+          next: (updatedReview) => {
+            this.reviews = this.reviews.map((r) => (r.id === updatedReview.id ? updatedReview : r));
+            this.calculateReviewStats();
 
-          if (this.product) {
-            this.product = {
-              ...this.product,
-              rating: this.reviewStats.average,
-              reviewCount: this.reviewStats.total
-            };
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Avis modifié',
+              detail: 'Votre avis a été mis à jour.'
+            });
+
+            this.showReviewDialog = false;
+            this.newReview = { rating: 5, title: '', comment: '' };
+            this.isEditingReview = false;
+            this.editingReviewId = null;
+            this.isSubmittingReview = false;
+          },
+          error: (error: Error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Erreur',
+              detail: error.message || 'Impossible de modifier votre avis'
+            });
+            this.isSubmittingReview = false;
           }
+        });
+    } else {
+      this.productService
+        .submitProductReview(this.product.id, {
+          rating: this.newReview.rating,
+          title: this.newReview.title,
+          comment: this.newReview.comment
+        })
+        .subscribe({
+          next: (review) => {
+            this.reviews.unshift(review);
+            this.calculateReviewStats();
 
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Avis publié',
-            detail: 'Merci pour votre avis !'
-          });
+            if (this.product) {
+              this.product = {
+                ...this.product,
+                rating: this.reviewStats.average,
+                reviewCount: this.reviewStats.total
+              };
+            }
 
-          this.showReviewDialog = false;
-          this.newReview = { rating: 5, title: '', comment: '' };
-          this.isSubmittingReview = false;
-        },
-        error: (error: Error) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: error.message || 'Impossible de publier votre avis'
-          });
-          this.isSubmittingReview = false;
-        }
-      });
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Avis publié',
+              detail: 'Merci pour votre avis !'
+            });
+
+            this.showReviewDialog = false;
+            this.newReview = { rating: 5, title: '', comment: '' };
+            this.isSubmittingReview = false;
+          },
+          error: (error: Error) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Erreur',
+              detail: error.message || 'Impossible de publier votre avis'
+            });
+            this.isSubmittingReview = false;
+          }
+        });
+    }
   }
 
   increaseQuantity() {

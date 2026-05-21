@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Mail\OrderConfirmation;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
@@ -40,7 +41,7 @@ class OrderController extends Controller
             });
         }
 
-        if (in_array($status, ['pending', 'confirmed', 'delivered'], true)) {
+        if (in_array($status, ['pending', 'confirmed', 'delivered', 'cancelled'], true)) {
             $query->where('status', $status);
         }
 
@@ -86,7 +87,7 @@ class OrderController extends Controller
             'total' => ['required', 'numeric', 'min:0'],
             'discount_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'promo_code' => ['sometimes', 'nullable', 'string', 'max:60'],
-            'status' => ['sometimes', Rule::in(['pending', 'confirmed', 'delivered'])],
+            'status' => ['sometimes', Rule::in(['pending', 'confirmed', 'delivered', 'cancelled'])],
             'address' => ['required', 'string', 'max:2000'],
             'phone' => ['required', 'string', 'max:30'],
         ]);
@@ -203,7 +204,7 @@ class OrderController extends Controller
 
             DB::commit();
 
-            // Prepare customer info (if any) and queue notification email to site owner / admin
+            // Prepare customer info (if any) and queue notification emails
             try {
                 $adminEmails = env('ADMIN_EMAIL', config('mail.from.address'));
                 $customer = null;
@@ -211,16 +212,19 @@ class OrderController extends Controller
                     $customer = User::query()->find($order->user_id);
                 }
 
+                // Send admin notification
                 if (! empty($adminEmails)) {
-                    // allow comma-separated list in ADMIN_EMAIL
                     $recipients = array_filter(array_map('trim', explode(',', (string) $adminEmails)));
                     if (! empty($recipients)) {
-                        // queue the mailable so the API is not blocked; Mailable uses Queueable
                         Mail::to($recipients)->queue(new \App\Mail\OrderPlaced($order, $customer));
                     }
                 }
+
+                // Send confirmation to customer
+                if ($customer !== null && ! empty($customer->email)) {
+                    Mail::to($customer->email)->queue(new OrderConfirmation($order, $customer));
+                }
             } catch (\Throwable $mailEx) {
-                // don't break the API response if queue fails — log for diagnostics
                 logger()->error('Failed to queue order notification email: '.$mailEx->getMessage());
             }
 
@@ -236,7 +240,7 @@ class OrderController extends Controller
         $this->authorizeAdmin($request);
 
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['pending', 'confirmed', 'delivered'])],
+            'status' => ['required', Rule::in(['pending', 'confirmed', 'delivered', 'cancelled'])],
         ]);
 
         // If changing status to confirmed, verify products are still available
@@ -277,6 +281,55 @@ class OrderController extends Controller
         ]);
 
         return response()->json($this->transformOrder($order->fresh()));
+    }
+
+    public function cancel(Request $request, Order $order): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user !== null, 401, 'Authentification requise.');
+
+        if ($user->role !== 'admin' && $order->user_id !== $user->id) {
+            return response()->json(['message' => 'Vous ne pouvez annuler que vos propres commandes.'], 403);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json(['message' => 'Seules les commandes en attente peuvent etre annulees.'], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $items = is_array($order->items) ? $order->items : [];
+
+            foreach ($items as $item) {
+                $productId = (int) ($item['product_id'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 1);
+
+                if ($productId <= 0) {
+                    continue;
+                }
+
+                $product = Product::query()->find($productId);
+
+                if ($product !== null) {
+                    $product->stock = $product->stock + $quantity;
+                    $product->save();
+                }
+            }
+
+            $order->update([
+                'status' => 'cancelled',
+            ]);
+
+            DB::commit();
+
+            return response()->json($this->transformOrder($order->fresh()));
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json(['message' => 'Erreur lors de l\'annulation de la commande.'], 500);
+        }
     }
 
     public function destroy(Request $request, Order $order): JsonResponse

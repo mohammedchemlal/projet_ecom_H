@@ -624,10 +624,22 @@
           align-items: center;
           gap: 0.5rem;
           transition: all 0.3s ease;
+          text-decoration: none;
 
           &:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
+          }
+
+          &.login-to-review {
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+
+            &:hover {
+              background: rgba(var(--primary-rgb), 0.06);
+              transform: none;
+            }
           }
         }
       }
@@ -690,8 +702,44 @@
 
             .review-rating {
               i {
-                color: #ffc107;
-                font-size: 0.8rem;
+                color: rgba(199, 142, 58, 0.6);
+                margin-right: 0.05rem;
+                font-size: 0.9rem;
+
+                &.pi-star-fill {
+                  color: var(--primary-color);
+                }
+              }
+            }
+
+            .review-actions {
+              display: flex;
+              gap: 0.25rem;
+              margin-left: 0.5rem;
+
+              .review-action-btn {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                border: none;
+                background: transparent;
+                color: var(--text-secondary);
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+
+                &:hover {
+                  background: rgba(var(--primary-rgb), 0.08);
+                  color: var(--primary-color);
+                }
+
+                &.review-action-delete:hover {
+                  background: rgba(220, 38, 38, 0.08);
+                  color: #dc2626;
+                }
               }
             }
           }

@@ -214,6 +214,35 @@ export class ProductService {
     );
   }
 
+  updateProductReview(
+    productId: number,
+    reviewId: number,
+    payload: {
+      rating?: number;
+      title?: string;
+      comment?: string;
+    }
+  ): Observable<ProductReview> {
+    return this.http
+      .patch<ApiProductReview>(
+        `${this.apiUrl}/${productId}/reviews/${reviewId}`,
+        payload,
+        { headers: this.authHeaders }
+      )
+      .pipe(
+        map((review) => this.mapApiProductReview(review)),
+        catchError((error) => throwError(() => new Error(this.getApiErrorMessage(error))))
+      );
+  }
+
+  deleteProductReview(productId: number, reviewId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/${productId}/reviews/${reviewId}`, { headers: this.authHeaders })
+      .pipe(
+        catchError((error) => throwError(() => new Error(this.getApiErrorMessage(error))))
+      );
+  }
+
   submitProductReview(
     productId: number,
     payload: {
