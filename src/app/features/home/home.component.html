@@ -1,8 +1,17 @@
-<!-- home.component.html -->
+<!-- home.component.html - Version responsive améliorée -->
 <div class="home-page">
   <!-- Hero Carousel -->
   <div class="hero-carousel">
+    <div class="hero-skeleton" aria-hidden="true" *ngIf="!heroReady">
+      <div class="hero-skeleton-card">
+        <span class="skeleton skeleton-kicker"></span>
+        <span class="skeleton skeleton-title"></span>
+        <span class="skeleton skeleton-text"></span>
+        <span class="skeleton skeleton-cta"></span>
+      </div>
+    </div>
     <p-carousel
+      [style.display]="heroReady ? 'block' : 'none'"
       [value]="heroSlides"
       [numVisible]="1"
       [numScroll]="1"
@@ -10,16 +19,24 @@
       [circular]="true"
       [showIndicators]="true"
       [showNavigators]="true"
+      [responsiveOptions]="heroResponsiveOptions"
     >
       <ng-template let-slide pTemplate="item">
-        <div
-          class="hero-slide"
-          [style.background-image]="
-            'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(' + slide.image + ')'
-          "
-        >
-          <div class="container px-3 md:px-5">
-            <div class="hero-content flex flex-column align-items-start">
+        <div class="hero-slide">
+          <img
+            class="hero-image"
+            [src]="slide.image"
+            [alt]="slide.alt"
+            [attr.loading]="slide.priority ? 'eager' : 'lazy'"
+            [attr.fetchpriority]="slide.priority ? 'high' : 'auto'"
+            (load)="onHeroImageLoad(slide.priority)"
+            (error)="onHeroImageLoad(slide.priority)"
+            [style.transform]="'translateY(' + (-heroScrollProgress * 30) + 'px)'"
+            [style.opacity]="1 - heroScrollProgress * 0.45"
+          />
+          <div class="hero-overlay" [style.opacity]="0.9 - heroScrollProgress * 0.9"></div>
+          <div class="container">
+            <div class="hero-content" [class.hero-content--right]="slide.align === 'right'" [class.hero-content--pro]="slide.align === 'right'">
               <h1 class="hero-title">{{ slide.title }}</h1>
               <p class="hero-subtitle">{{ slide.subtitle }}</p>
               <a class="btn-primary hero-cta" routerLink="/products">{{ slide.cta }}</a>
@@ -31,9 +48,10 @@
   </div>
 
   <!-- Produits Vedettes -->
-  <div class="section">
-    <div class="container px-3 md:px-5">
-      <div class="section-header flex flex-column align-items-center text-center">
+  <div class="section featured-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">Collection</span>
         <h2>Nos Produits Vedettes</h2>
         <p>Découvrez notre sélection de bijoux les plus populaires</p>
         <div class="section-line"></div>
@@ -42,82 +60,74 @@
           <i class="pi pi-arrow-right" aria-hidden="true"></i>
         </a>
       </div>
-
-      @if (!isLoading) {
-        <div class="products-grid grid">
-          @for (product of featuredProducts; track product.id) {
-            <div class="product-card">
-              <div class="product-image">
-                <img [src]="product.images[0]" [alt]="product.name" loading="lazy" decoding="async" />
-                <div class="product-actions-overlay">
-                  <button
-                    class="action-icon"
-                    (click)="addToCart(product)"
-                    title="Ajouter au panier"
-                    type="button"
-                    aria-label="Ajouter au panier"
-                  >
-                    <i class="pi pi-shopping-cart"></i>
-                  </button>
-                  <button
-                    class="action-icon"
-                    (click)="addToWishlist(product)"
-                    title="Ajouter aux favoris"
-                    type="button"
-                    aria-label="Ajouter aux favoris"
-                  >
-                    <i class="pi pi-heart"></i>
-                  </button>
-                  <a
-                    class="action-icon"
-                    [routerLink]="['/product', product.id]"
-                    title="Voir détails"
-                    aria-label="Voir détails"
-                  >
-                    <i class="pi pi-eye"></i>
-                  </a>
-                </div>
-                @if (product.isPromotion) {
-                  <div class="discount-badge">-{{ product.promotionPercentage }}%</div>
-                }
-              </div>
-              <div class="product-info">
-                <h3>
-                  <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
-                </h3>
-                <div class="product-price">
-                  <span class="current-price">{{
-                    getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA'
-                  }}</span>
-                  @if (product.discountPrice) {
-                    <span class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-                  }
-                </div>
-                <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
-              </div>
-            </div>
-          }
-        </div>
-      } @else {
+      
+      <ng-container *ngIf="!productsLoading; else productsLoadingTpl">
         <div class="products-grid">
-          @for (_ of [1, 2, 3, 4]; track _) {
-            <div class="skeleton-card">
-              <div class="skeleton skeleton-image"></div>
-              <div class="skeleton skeleton-text"></div>
-              <div class="skeleton skeleton-text short"></div>
+          <div class="product-card" *ngFor="let product of featuredProducts; trackBy: trackById">
+            <div class="product-image">
+              <img [src]="normalizeImage(product.images[0])" [alt]="product.name" loading="lazy" decoding="async" />
+              <div class="product-actions-overlay">
+                <button
+                  class="action-icon"
+                  (click)="addToCart(product)"
+                  title="Ajouter au panier"
+                  type="button"
+                  aria-label="Ajouter au panier"
+                >
+                  <i class="pi pi-shopping-cart"></i>
+                </button>
+                <button
+                  class="action-icon"
+                  (click)="addToWishlist(product)"
+                  title="Ajouter aux favoris"
+                  type="button"
+                  aria-label="Ajouter aux favoris"
+                >
+                  <i class="pi pi-heart"></i>
+                </button>
+                <a
+                  class="action-icon"
+                  [routerLink]="['/product', product.id]"
+                  title="Voir détails"
+                  aria-label="Voir détails"
+                >
+                  <i class="pi pi-eye"></i>
+                </a>
+              </div>
+              <div *ngIf="product.isPromotion" class="discount-badge">-{{ product.promotionPercentage }}%</div>
             </div>
-          }
+            <div class="product-info">
+              <h3>
+                <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
+              </h3>
+              <div class="product-price">
+                <span class="current-price">{{ getDiscountedPrice(product) | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+                <span *ngIf="product.discountPrice" class="original-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              </div>
+              <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+            </div>
+          </div>
         </div>
-      }
+      </ng-container>
+      <ng-template #productsLoadingTpl>
+        <div class="products-grid">
+          <div class="skeleton-card" *ngFor="let _ of [1,2,3,4]">
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+        </div>
+      </ng-template>
     </div>
   </div>
 
   <!-- Catégories -->
   <div class="categories-section">
-    <div class="container px-3 md:px-5">
-      <div class="section-header flex flex-column align-items-center text-center">
-        <h2>Catégories</h2>
-        <p>Explorez notre collection par catégorie</p>
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">Catégories</span>
+        <h2>Explorez par Catégorie</h2>
+        <p>Trouvez le bijou parfait selon vos préférences</p>
         <div class="section-line"></div>
       </div>
 
@@ -130,19 +140,17 @@
         [autoplayInterval]="3500"
         [showIndicators]="true"
         [showNavigators]="true"
-        styleClass="category-carousel"
+        class="category-carousel"
       >
         <ng-template pTemplate="item" let-category>
-          <a class="category-card" [routerLink]="category.link">
+          <a class="category-card" [routerLink]="['/products']" [queryParams]="{ category: category.value }">
             <div class="category-image">
-              <img [src]="category.image" [alt]="category.name" />
+              <img [src]="category.image" [alt]="category.name" loading="lazy" />
+              <div class="category-overlay"></div>
             </div>
-
             <div class="category-content">
-              <div class="category-meta">
-                <h3>{{ category.name }}</h3>
-                <span class="category-count">{{ category.count }} produits</span>
-              </div>
+              <h3>{{ category.name }}</h3>
+              <span class="category-count">{{ category.count }} produits</span>
               <span class="category-cta">Découvrir</span>
             </div>
           </a>
@@ -151,146 +159,138 @@
     </div>
   </div>
 
-  <!-- Bannière Promotion -->
-  <div class="promo-banner">
-    <div class="container px-3 md:px-5">
-      <div
-        class="promo-content flex flex-column md:flex-row align-items-center justify-content-between gap-4"
-      >
-        <div class="promo-text">
-          <span class="promo-label">Offre Limitée</span>
-          <h2>Jusqu'à -30%</h2>
-          <p>Sur une sélection de bijoux</p>
-          <a class="btn-primary" routerLink="/products">Profiter de l'offre</a>
-        </div>
-        <div class="promo-image">
-          <img
-            src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
-            alt="Promotion"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Nouveautés -->
-  <div class="section">
-    <div class="container px-3 md:px-5">
-      <div class="section-header flex flex-column align-items-center text-center">
+  <div class="section arrivals-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">Nouveautés</span>
         <h2>Nouveautés</h2>
         <p>Les dernières arrivages dans notre collection</p>
         <div class="section-line"></div>
       </div>
 
-      @if (!isLoading) {
-        <div class="products-grid grid">
-          @for (product of newArrivals; track product.id) {
-            <div class="product-card">
-              <div class="product-image">
-                <img [src]="product.images[0]" [alt]="product.name" loading="lazy" decoding="async" />
-                <div class="new-badge">Nouveau</div>
-              </div>
-              <div class="product-info">
-                <h3>
-                  <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
-                </h3>
-                <div class="product-price">
-                  <span class="current-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
-                </div>
-                <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
-              </div>
-            </div>
-          }
-        </div>
-      } @else {
+      <ng-container *ngIf="!productsLoading; else newArrivalsLoading">
         <div class="products-grid">
-          @for (_ of [1, 2, 3, 4]; track _) {
-            <div class="skeleton-card">
-              <div class="skeleton skeleton-image"></div>
-              <div class="skeleton skeleton-text"></div>
-              <div class="skeleton skeleton-text short"></div>
+          <div class="product-card" *ngFor="let product of newArrivals; trackBy: trackById">
+            <div class="product-image">
+              <img [src]="normalizeImage(product.images[0])" [alt]="product.name" loading="lazy" decoding="async" />
+              <div class="new-badge">Nouveau</div>
             </div>
-          }
+            <div class="product-info">
+              <h3>
+                <a [routerLink]="['/product', product.id]">{{ product.name }}</a>
+              </h3>
+              <div class="product-price">
+                <span class="current-price">{{ product.price | currency:'MAD':'symbol':'1.0-0':'fr-MA' }}</span>
+              </div>
+              <p-rating [(ngModel)]="product.rating" [readonly]="true"></p-rating>
+            </div>
+          </div>
         </div>
-      }
+      </ng-container>
+      <ng-template #newArrivalsLoading>
+        <div class="products-grid">
+          <div class="skeleton-card" *ngFor="let _ of [1,2,3,4]">
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
+          </div>
+        </div>
+      </ng-template>
     </div>
   </div>
 
   <!-- Témoignages -->
   <div class="testimonials-section">
-    <div class="container px-3 md:px-5">
-      <div class="section-header flex flex-column align-items-center text-center">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">Témoignages</span>
         <h2>Ce que nos clients disent</h2>
-        <p>Ils nous font confiance</p>
+        <p>Ils nous font confiance et partagent leur expérience</p>
         <div class="section-line"></div>
       </div>
 
-      <div class="testimonials-grid grid">
-        @for (testimonial of testimonials; track testimonial.name) {
-          <div class="testimonial-card">
-            <div class="testimonial-avatar">
-              <img [src]="testimonial.image" [alt]="testimonial.name" loading="lazy" decoding="async" />
-            </div>
-            <p-rating [(ngModel)]="testimonial.rating" [readonly]="true"></p-rating>
-            <p class="testimonial-comment">"{{ testimonial.comment }}"</p>
-            <h4>{{ testimonial.name }}</h4>
-            <span class="testimonial-role">{{ testimonial.role }}</span>
+      <ng-container *ngIf="testimonialsLoading; else testimonialsLoaded">
+        <div class="testimonials-grid">
+          <div class="testimonial-card testimonial-skeleton" *ngFor="let _ of [1,2,3]">
+            <div class="skeleton skeleton-avatar"></div>
+            <div class="skeleton skeleton-rating"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text short"></div>
           </div>
-        }
-      </div>
+        </div>
+      </ng-container>
+      <ng-template #testimonialsLoaded>
+        <ng-container *ngIf="testimonials.length > 0; else testimonialsEmpty">
+          <div class="testimonials-grid">
+            <div class="testimonial-card" *ngFor="let testimonial of testimonials; trackBy: trackById">
+              <div class="testimonial-avatar">
+                <img [src]="normalizeImage(testimonial.customerImage)" [alt]="testimonial.customerName" loading="lazy" />
+              </div>
+              <p-rating [(ngModel)]="testimonial.rating" [readonly]="true"></p-rating>
+              <p class="testimonial-comment">"{{ testimonial.comment }}"</p>
+              <h4>{{ testimonial.customerName }}</h4>
+              <span class="testimonial-role">{{ testimonial.role || 'Client(e)' }}</span>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #testimonialsEmpty>
+          <p class="testimonials-empty">Aucun témoignage disponible pour le moment.</p>
+        </ng-template>
+      </ng-template>
     </div>
   </div>
 
   <!-- Newsletter -->
   <div class="newsletter-section">
-    <div class="container px-3 md:px-5">
-      <div class="newsletter-content flex flex-column align-items-center text-center">
-        <i class="pi pi-envelope"></i>
+    <div class="container">
+      <div class="newsletter-content">
+        <div class="newsletter-icon">
+          <i class="pi pi-envelope"></i>
+        </div>
         <h2>Newsletter</h2>
-        <p>Inscrivez-vous pour recevoir nos offres exclusives</p>
+        <p>Inscrivez-vous pour recevoir nos offres exclusives et nouveautés</p>
         <form class="newsletter-form" #newsletterForm="ngForm" (ngSubmit)="subscribeNewsletter()">
-          <input
-            type="email"
-            class="newsletter-input"
-            placeholder="Votre email"
-            aria-label="Votre email"
-            autocomplete="email"
-            inputmode="email"
-            name="newsletterEmail"
-            required
-            email
-            [(ngModel)]="newsletterEmail"
-          />
-          <button class="btn-primary" type="submit" [disabled]="newsletterForm.invalid || newsletterState === 'saving'">
-            @if (newsletterState === 'saving') {
-              Inscription...
-            } @else {
-              S'inscrire
-            }
-          </button>
+          <div class="form-group">
+            <input
+              type="email"
+              class="newsletter-input"
+              placeholder="Votre adresse email"
+              aria-label="Votre email"
+              autocomplete="email"
+              inputmode="email"
+              name="newsletterEmail"
+              required
+              email
+              [(ngModel)]="newsletterEmail"
+            />
+            <button type="submit" class="btn-primary newsletter-submit" [disabled]="newsletterState === 'saving'">
+              {{ newsletterState === 'saving' ? 'Inscription...' : "S'inscrire" }}
+            </button>
+          </div>
         </form>
-
-        @if (newsletterState === 'success') {
-          <p class="newsletter-feedback success" role="status" aria-live="polite">{{ newsletterMessage }}</p>
-        } @else if (newsletterState === 'error') {
-          <p class="newsletter-feedback error" role="status" aria-live="polite">{{ newsletterMessage }}</p>
-        }
+        <p *ngIf="newsletterState === 'success'" class="newsletter-feedback success" role="status" aria-live="polite">
+          <i class="pi pi-check-circle"></i> {{ newsletterMessage }}
+        </p>
+        <p *ngIf="newsletterState === 'error'" class="newsletter-feedback error" role="status" aria-live="polite">
+          <i class="pi pi-exclamation-circle"></i> {{ newsletterMessage }}
+        </p>
       </div>
     </div>
   </div>
 
   <!-- Footer -->
   <footer class="footer">
-    <div class="container px-3 md:px-5">
-      <div class="footer-grid grid">
+    <div class="container">
+      <div class="footer-grid">
         <div class="footer-col">
-          <h3>VALERIA</h3>
+          <h3>VALERYA</h3>
           <p>Des bijoux d'exception pour les femmes qui aiment l'élégance et la qualité.</p>
           <div class="social-links">
-            <a href="#"><i class="pi pi-facebook"></i></a>
-            <a href="#"><i class="pi pi-instagram"></i></a>
-            <a href="#"><i class="pi pi-twitter"></i></a>
-            <a href="#"><i class="pi pi-pinterest"></i></a>
+            <a href="#" aria-label="Facebook"><i class="pi pi-facebook"></i></a>
+            <a href="https://www.instagram.com/valerya.jewels?igsh=azgzY2hnNjY2b2Fz" aria-label="Instagram"><i class="pi pi-instagram"></i></a>
+            <a href="#" aria-label="Twitter"><i class="pi pi-twitter"></i></a>
+            <a href="#" aria-label="TikTok"><i class="pi pi-tiktok"></i></a>
           </div>
         </div>
         <div class="footer-col">
@@ -313,19 +313,19 @@
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
-          <ul>
-            <li><i class="pi pi-phone"></i> +212 6 23 45 67 89</li>
-            <li><i class="pi pi-envelope"></i> contact@valeria.com</li>
-            <li><i class="pi pi-map-marker"></i> Rabat, Maroc</li>
+          <ul class="contact-info">
+            <li><i class="pi pi-phone"></i> <span>+212 6 23 45 67 89</span></li>
+            <li><i class="pi pi-envelope"></i> <span>contact@valerya.store</span></li>
+            <li><i class="pi pi-map-marker"></i> <span>Maroc</span></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2026 Valeria. Tous droits réservés.</p>
+        <p> &copy;2026 VALERYA. Tous droits réservés.</p>
         <div class="payment-methods">
           <i class="pi pi-credit-card"></i>
-          <i class="pi pi-paypal"></i>
-          <i class="pi pi-apple"></i>
+          <i class="pi pi-lock"></i>
+          <span>Paiement sécurisé</span>
         </div>
       </div>
     </div>
